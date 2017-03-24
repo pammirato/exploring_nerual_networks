@@ -70,7 +70,6 @@ class PreDefinedSquareImageNet(torch.nn.Module):
         #layers.append(Flatten(image_size*image_size*3))
         layers.append(torch.nn.Linear(image_size*image_size*16, 256))
         layers.append(torch.nn.Linear(256,num_classes))
-        layers.append(torch.nn.LogSoftmax())
 
         #put the layers in the net
         #must do so model parameters are accesable for

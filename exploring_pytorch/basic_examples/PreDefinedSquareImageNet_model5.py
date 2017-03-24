@@ -50,26 +50,26 @@ class PreDefinedSquareImageNet(torch.nn.Module):
         layers = []
 
         #conv1, with max pool
-        layers.append(torch.nn.Conv2d(3,16,5))
-        image_size = image_size - (5-1)
-        layers.append(torch.nn.ReLU())
-        image_size = image_size
-        layers.append(torch.nn.MaxPool2d((2,2)))
-        image_size = int(image_size/2)
+        #layers.append(torch.nn.Conv2d(3,5,5))
+        #image_size = image_size - (5-1)
+        #layers.append(torch.nn.ReLU())
+        #image_size = image_size
+        #layers.append(torch.nn.MaxPool2d((2,2)))
+        #image_size = int(image_size/2)
 
         #conv2, with max pool
-        layers.append(torch.nn.Conv2d(16,16,5))
-        image_size = image_size - (5-1)
-        layers.append(torch.nn.ReLU())
-        image_size = image_size
-        layers.append(torch.nn.MaxPool2d((2,2)))
-        image_size = int(image_size/2)
+        #layers.append(torch.nn.Conv2d(5,5,5))
+        #image_size = image_size - (5-1)
+        #layers.append(torch.nn.ReLU())
+        #image_size = image_size
+        #layers.append(torch.nn.MaxPool2d((2,2)))
+        #image_size = int(image_size/2)
 
         #fully connected layer
-        layers.append(Flatten(image_size*image_size*16))
-        #layers.append(Flatten(image_size*image_size*3))
-        layers.append(torch.nn.Linear(image_size*image_size*16, 256))
-        layers.append(torch.nn.Linear(256,num_classes))
+        #layers.append(Flatten(image_size*image_size*5))
+        layers.append(Flatten(image_size*image_size*3))
+        #layers.append(torch.nn.Linear(image_size*image_size*3, 256))
+        layers.append(torch.nn.Linear(image_size*image_size*3,num_classes))
         layers.append(torch.nn.LogSoftmax())
 
         #put the layers in the net
