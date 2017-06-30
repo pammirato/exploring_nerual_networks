@@ -40,7 +40,7 @@ class RPN(nn.Module):
         self.features = VGG16(bn=False)
 
         self.target_conv = Conv2d(512,512,10)
-        #self.target_embedding = FC(512*33*60 + 10*10*512, 512*33*60);
+        self.target_embedding = FC(512 +  512, 512);
 
 
         self.conv1 = Conv2d(512, 512, 3, same_padding=True)
@@ -80,7 +80,19 @@ class RPN(nn.Module):
         #target is 1X512
         #concat, fc embedding
         #reshape again to 1x512x33x60 
-
+        features_permute = features.permute(0,2,3,1).contiguous()
+        features_reshape = self.reshape_layer(features_permute,33*60)
+        features_reshape = features_reshape[0,:,0,:]
+        #concatenate image features with target image features
+        x = torch.cat([features_reshape,target_features.expand(features_reshape.size()[0],
+                                                               target_features.size()[1])],1)
+        #embed the concatenated features
+        x = self.target_embedding(x)
+        x = x.unsqueeze(0)
+        x = x.unsqueeze(2)
+        x = self.reshape_layer(x,33)
+        x = x.permute(0,3,1,2).contiguous()
+        features = x 
 
         rpn_conv1 = self.conv1(features)
 
@@ -293,6 +305,8 @@ class FasterRCNN(nn.Module):
 
         ce_weights = torch.ones(cls_score.size()[1])
         ce_weights[0] = float(fg_cnt) / bg_cnt
+        if fg_cnt == 0:
+            ce_weights[0] = 1
         ce_weights = ce_weights.cuda()
         cross_entropy = F.cross_entropy(cls_score, label, weight=ce_weights)
 

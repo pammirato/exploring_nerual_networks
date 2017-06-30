@@ -27,8 +27,8 @@ cfg_file = 'experiments/cfgs/faster_rcnn_end2end.yml'
 # trained_model = '/media/longc/Data/models/VGGnet_fast_rcnn_iter_70000.h5'
 #trained_model = 'models/saved_model3/faster_rcnn_90000.h5'
 #trained_model = '/playpen/ammirato/Documents/exploring_neural_networks/exploring_pytorch/saved_models/fasterRCNN_avd.h5'
-trained_model_path = ('/playpen/ammirato/Documents/exploring_neural_networks/' + 
-                     'exploring_pytorch/saved_models/')
+trained_model_path = ('/playpen/ammirato/Data/Detections/' + 
+                     'saved_models/')
 trained_model_names = ['fasterRCNN_avd.h5']
 trained_model_names = [#'faster_rcnn_avd_split2_instances1-5_0',
                        #'faster_rcnn_avd_split2_instances1-5_1',
@@ -48,7 +48,7 @@ trained_model_names = [#'faster_rcnn_avd_split2_instances1-5_0',
                        #'faster_rcnn_avd_split2_15',
                        #'faster_rcnn_avd_split2_16',
                        #'faster_rcnn_avd_split2_17',
-                       #'faster_rcnn_avd_split2_18',
+                       'faster_rcnn_avd_split2_18',
                        #'faster_rcnn_avd_split2_19',
                       ]
 rand_seed = 1024

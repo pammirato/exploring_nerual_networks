@@ -136,55 +136,61 @@ def anchor_target_layer(rpn_cls_score, gt_boxes, gt_ishard, dontcare_areas, im_i
     labels = np.empty((len(inds_inside),), dtype=np.float32)
     labels.fill(-1)
 
-    # overlaps between the anchors and the gt boxes
-    # overlaps (ex, gt), shape is A x G
-    overlaps = bbox_overlaps(
-        np.ascontiguousarray(anchors, dtype=np.float),
-        np.ascontiguousarray(gt_boxes, dtype=np.float))
-    argmax_overlaps = overlaps.argmax(axis=1)  # (A)
-    max_overlaps = overlaps[np.arange(len(inds_inside)), argmax_overlaps]
-    gt_argmax_overlaps = overlaps.argmax(axis=0)  # G
-    gt_max_overlaps = overlaps[gt_argmax_overlaps,
-                               np.arange(overlaps.shape[1])]
-    gt_argmax_overlaps = np.where(overlaps == gt_max_overlaps)[0]
+    #get rid of background gt_boxes
+    gt_boxes = np.delete(gt_boxes,np.where(gt_boxes[:,4]==0),0)
+    if gt_boxes.shape[0] == 0:
+        labels.fill(0)
+    else:
 
-    if not cfg.TRAIN.RPN_CLOBBER_POSITIVES:
-        # assign bg labels first so that positive labels can clobber them
-        labels[max_overlaps < cfg.TRAIN.RPN_NEGATIVE_OVERLAP] = 0
+        # overlaps between the anchors and the gt boxes
+        # overlaps (ex, gt), shape is A x G
+        overlaps = bbox_overlaps(
+            np.ascontiguousarray(anchors, dtype=np.float),
+            np.ascontiguousarray(gt_boxes, dtype=np.float))
+        argmax_overlaps = overlaps.argmax(axis=1)  # (A)
+        max_overlaps = overlaps[np.arange(len(inds_inside)), argmax_overlaps]
+        gt_argmax_overlaps = overlaps.argmax(axis=0)  # G
+        gt_max_overlaps = overlaps[gt_argmax_overlaps,
+                                   np.arange(overlaps.shape[1])]
+        gt_argmax_overlaps = np.where(overlaps == gt_max_overlaps)[0]
 
-    # fg label: for each gt, anchor with highest overlap
-    labels[gt_argmax_overlaps] = 1
-    # fg label: above threshold IOU
-    labels[max_overlaps >= cfg.TRAIN.RPN_POSITIVE_OVERLAP] = 1
+        if not cfg.TRAIN.RPN_CLOBBER_POSITIVES:
+            # assign bg labels first so that positive labels can clobber them
+            labels[max_overlaps < cfg.TRAIN.RPN_NEGATIVE_OVERLAP] = 0
 
-    if cfg.TRAIN.RPN_CLOBBER_POSITIVES:
-        # assign bg labels last so that negative labels can clobber positives
-        labels[max_overlaps < cfg.TRAIN.RPN_NEGATIVE_OVERLAP] = 0
+        # fg label: for each gt, anchor with highest overlap
+        labels[gt_argmax_overlaps] = 1
+        # fg label: above threshold IOU
+        labels[max_overlaps >= cfg.TRAIN.RPN_POSITIVE_OVERLAP] = 1
 
-    # preclude dontcare areas
-    if dontcare_areas is not None and dontcare_areas.shape[0] > 0:
-        # intersec shape is D x A
-        intersecs = bbox_intersections(
-            np.ascontiguousarray(dontcare_areas, dtype=np.float),  # D x 4
-            np.ascontiguousarray(anchors, dtype=np.float)  # A x 4
-        )
-        intersecs_ = intersecs.sum(axis=0)  # A x 1
-        labels[intersecs_ > cfg.TRAIN.DONTCARE_AREA_INTERSECTION_HI] = -1
+        if cfg.TRAIN.RPN_CLOBBER_POSITIVES:
+            # assign bg labels last so that negative labels can clobber positives
+            labels[max_overlaps < cfg.TRAIN.RPN_NEGATIVE_OVERLAP] = 0
 
-    # preclude hard samples that are highly occlusioned, truncated or difficult to see
-    if cfg.TRAIN.PRECLUDE_HARD_SAMPLES and gt_ishard is not None and gt_ishard.shape[0] > 0:
-        assert gt_ishard.shape[0] == gt_boxes.shape[0]
-        gt_ishard = gt_ishard.astype(int)
-        gt_hardboxes = gt_boxes[gt_ishard == 1, :]
-        if gt_hardboxes.shape[0] > 0:
-            # H x A
-            hard_overlaps = bbox_overlaps(
-                np.ascontiguousarray(gt_hardboxes, dtype=np.float),  # H x 4
-                np.ascontiguousarray(anchors, dtype=np.float))  # A x 4
-            hard_max_overlaps = hard_overlaps.max(axis=0)  # (A)
-            labels[hard_max_overlaps >= cfg.TRAIN.RPN_POSITIVE_OVERLAP] = -1
-            max_intersec_label_inds = hard_overlaps.argmax(axis=1)  # H x 1
-            labels[max_intersec_label_inds] = -1  #
+        # preclude dontcare areas
+        if dontcare_areas is not None and dontcare_areas.shape[0] > 0:
+            # intersec shape is D x A
+            intersecs = bbox_intersections(
+                np.ascontiguousarray(dontcare_areas, dtype=np.float),  # D x 4
+                np.ascontiguousarray(anchors, dtype=np.float)  # A x 4
+            )
+            intersecs_ = intersecs.sum(axis=0)  # A x 1
+            labels[intersecs_ > cfg.TRAIN.DONTCARE_AREA_INTERSECTION_HI] = -1
+
+        # preclude hard samples that are highly occlusioned, truncated or difficult to see
+        if cfg.TRAIN.PRECLUDE_HARD_SAMPLES and gt_ishard is not None and gt_ishard.shape[0] > 0:
+            assert gt_ishard.shape[0] == gt_boxes.shape[0]
+            gt_ishard = gt_ishard.astype(int)
+            gt_hardboxes = gt_boxes[gt_ishard == 1, :]
+            if gt_hardboxes.shape[0] > 0:
+                # H x A
+                hard_overlaps = bbox_overlaps(
+                    np.ascontiguousarray(gt_hardboxes, dtype=np.float),  # H x 4
+                    np.ascontiguousarray(anchors, dtype=np.float))  # A x 4
+                hard_max_overlaps = hard_overlaps.max(axis=0)  # (A)
+                labels[hard_max_overlaps >= cfg.TRAIN.RPN_POSITIVE_OVERLAP] = -1
+                max_intersec_label_inds = hard_overlaps.argmax(axis=1)  # H x 1
+                labels[max_intersec_label_inds] = -1  #
 
     # subsample positive labels if we have too many
     num_fg = int(cfg.TRAIN.RPN_FG_FRACTION * cfg.TRAIN.RPN_BATCHSIZE)
@@ -204,8 +210,13 @@ def anchor_target_layer(rpn_cls_score, gt_boxes, gt_ishard, dontcare_areas, im_i
         # print "was %s inds, disabling %s, now %s inds" % (
         # len(bg_inds), len(disable_inds), np.sum(labels == 0))
 
-    # bbox_targets = np.zeros((len(inds_inside), 4), dtype=np.float32)
-    bbox_targets = _compute_targets(anchors, gt_boxes[argmax_overlaps, :])
+    #Phil add
+    if gt_boxes.shape[0] == 0:
+        bbox_targets = np.zeros((len(inds_inside), 4), dtype=np.float32)
+    else:
+
+        # bbox_targets = np.zeros((len(inds_inside), 4), dtype=np.float32)
+        bbox_targets = _compute_targets(anchors, gt_boxes[argmax_overlaps, :])
 
     bbox_inside_weights = np.zeros((len(inds_inside), 4), dtype=np.float32)
     bbox_inside_weights[labels == 1, :] = np.array(cfg.TRAIN.RPN_BBOX_INSIDE_WEIGHTS)

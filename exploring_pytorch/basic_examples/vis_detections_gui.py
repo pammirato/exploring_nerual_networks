@@ -427,7 +427,10 @@ class DetectionVisualizer(object):
 
 
     def target_menu_selected(self, *args):
-        print self.targetVar.get()
+        x = 1
+        #if not(self.rect is None):
+        #    self.rect.remove()
+        #print self.targetVar.get()
 
     def run_targetDriven_detector(self):
 
@@ -443,7 +446,7 @@ class DetectionVisualizer(object):
         target_data = cv2.imread(os.path.join(self.targets_path,self.targetVar.get()))
         target_data = np.expand_dims(target_data,axis=0)
  
-        max_per_image = 300 
+        max_per_image = 1 
         thresh = 0.05
 
         im_data = self.main_img_tensor
@@ -541,12 +544,12 @@ class DetectionVisualizer(object):
                 self.main_img_axis.text(box[0]+15,
                                         box[1]+15,
                                         str(cid), 
-                                        fontsize=15,
+                                        fontsize=8,
                                         bbox=dict(facecolor='red')) 
                 self.main_img_axis.text(box[0]+15,
                                         box[1]+30,
                                         str(box[4]), 
-                                        fontsize=15,
+                                        fontsize=7,
                                         bbox=dict(facecolor='red')) 
                 self.main_canvas.show()
        
@@ -563,9 +566,9 @@ class DetectionVisualizer(object):
 #USER INPUT
 data_path = '/playpen/ammirato/Data/HalvedRohitData/'
 scene_list=[
-            # 'Home_006_1',
-             'Home_008_1',
-            # 'Home_002_1'
+             'Home_003_1',
+             #'Home_003_2',
+             #'Office_001_1'
              ]
 
 

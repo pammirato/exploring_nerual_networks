@@ -27,29 +27,31 @@ cfg_file = 'experiments/cfgs/faster_rcnn_end2end.yml'
 # trained_model = '/media/longc/Data/models/VGGnet_fast_rcnn_iter_70000.h5'
 #trained_model = 'models/saved_model3/faster_rcnn_90000.h5'
 #trained_model = '/playpen/ammirato/Documents/exploring_neural_networks/exploring_pytorch/saved_models/fasterRCNN_avd.h5'
-trained_model_path = ('/playpen/ammirato/Documents/exploring_neural_networks/' + 
-                     'exploring_pytorch/saved_models/')
+trained_model_path = ('/playpen/ammirato/Data/Detections/' + 
+                     'saved_models/')
 trained_model_names = ['fasterRCNN_avd.h5']
-trained_model_names = ['faster_rcnn_avd_split2_target_driven_fc7+_concat_0',
-                       'faster_rcnn_avd_split2_target_driven_fc7+_concat_1',
-                       'faster_rcnn_avd_split2_target_driven_fc7+_concat_2',
-                       'faster_rcnn_avd_split2_target_driven_fc7+_concat_3',
-                       'faster_rcnn_avd_split2_target_driven_fc7+_concat_4',
-                       'faster_rcnn_avd_split2_target_driven_fc7+_concat_5',
-                       'faster_rcnn_avd_split2_target_driven_fc7+_concat_6',
-                       'faster_rcnn_avd_split2_target_driven_fc7+_concat_7',
-                       'faster_rcnn_avd_split2_target_driven_fc7+_concat_8',
-                       'faster_rcnn_avd_split2_target_driven_fc7+_concat_9',
-                       'faster_rcnn_avd_split2_target_driven_fc7+_concat_10',
-                       'faster_rcnn_avd_split2_target_driven_fc7+_concat_11',
-                       'faster_rcnn_avd_split2_target_driven_fc7+_concat_12',
-                       'faster_rcnn_avd_split2_target_driven_fc7+_concat_13',
-                       'faster_rcnn_avd_split2_target_driven_fc7+_concat_14',
-                       'faster_rcnn_avd_split2_target_driven_fc7+_concat_15',
-                       'faster_rcnn_avd_split2_target_driven_fc7+_concat_16',
-                       'faster_rcnn_avd_split2_target_driven_fc7+_concat_17',
-                       'faster_rcnn_avd_split2_target_driven_fc7+_concat_18',
-                       'faster_rcnn_avd_split2_target_driven_fc7+_concat_19',
+
+
+trained_model_names = ['faster_rcnn_avd_split2_target_driven_fc7+_concat_vgg_feat_concat_train4_0',
+                       'faster_rcnn_avd_split2_target_driven_fc7+_concat_vgg_feat_concat_train4_1',
+                       'faster_rcnn_avd_split2_target_driven_fc7+_concat_vgg_feat_concat_train4_2',
+                       'faster_rcnn_avd_split2_target_driven_fc7+_concat_vgg_feat_concat_train4_3',
+                       'faster_rcnn_avd_split2_target_driven_fc7+_concat_vgg_feat_concat_train4_4',
+                       'faster_rcnn_avd_split2_target_driven_fc7+_concat_vgg_feat_concat_train4_5',
+                       'faster_rcnn_avd_split2_target_driven_fc7+_concat_vgg_feat_concat_train4_6',
+                       'faster_rcnn_avd_split2_target_driven_fc7+_concat_vgg_feat_concat_train4_7',
+                       'faster_rcnn_avd_split2_target_driven_fc7+_concat_vgg_feat_concat_train4_8',
+                       'faster_rcnn_avd_split2_target_driven_fc7+_concat_vgg_feat_concat_train4_9',
+                       'faster_rcnn_avd_split2_target_driven_fc7+_concat_vgg_feat_concat_train4_10',
+                       'faster_rcnn_avd_split2_target_driven_fc7+_concat_vgg_feat_concat_train4_11',
+                       'faster_rcnn_avd_split2_target_driven_fc7+_concat_vgg_feat_concat_train4_12',
+                       'faster_rcnn_avd_split2_target_driven_fc7+_concat_vgg_feat_concat_train4_13',
+                       'faster_rcnn_avd_split2_target_driven_fc7+_concat_vgg_feat_concat_train4_14',
+                       'faster_rcnn_avd_split2_target_driven_fc7+_concat_vgg_feat_concat_train4_15',
+                       'faster_rcnn_avd_split2_target_driven_fc7+_concat_vgg_feat_concat_train4_16',
+                       'faster_rcnn_avd_split2_target_driven_fc7+_concat_vgg_feat_concat_train4_17',
+                       'faster_rcnn_avd_split2_target_driven_fc7+_concat_vgg_feat_concat_train4_18',
+                       'faster_rcnn_avd_split2_target_driven_fc7+_concat_vgg_feat_concat_train4_19',
                       ]
 rand_seed = 1024
 
@@ -255,10 +257,10 @@ if __name__ == '__main__':
 #    imdb.competition_mode(on=True)
     data_path = '/playpen/ammirato/Data/HalvedRohitData/'
     scene_list=[
-             'Home_006_1',
-             'Home_008_1',
+             'Home_003_1',
+             'Home_003_2',
              #'test',
-             'Home_002_1'
+             'Office_001_1'
              ]
 
     #CREATE TRAIN/TEST splits
@@ -290,7 +292,7 @@ if __name__ == '__main__':
 
         # evaluation
         test_net(model_name, net, dataloader, max_per_image, thresh=thresh, vis=vis,
-                 output_dir='/playpen/ammirato/Data/Detections/FasterRCNN_AVD/target_driven/')
+                 output_dir='/playpen/ammirato/Data/Detections/FasterRCNN_AVD/')
 
 
 

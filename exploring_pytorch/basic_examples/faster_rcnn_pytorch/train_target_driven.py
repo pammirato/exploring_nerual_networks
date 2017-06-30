@@ -5,6 +5,8 @@ import numpy as np
 from datetime import datetime
 import cv2
 
+import matplotlib.pyplot as plt
+
 from faster_rcnn import network
 from faster_rcnn.faster_rcnn_target_driven import FasterRCNN, RPN
 from faster_rcnn.utils.timer import Timer
@@ -45,22 +47,23 @@ def log_print(text, color=None, on_color=None, attrs=None):
 # ------------
 imdb_name = 'voc_2007_trainval'
 cfg_file = 'experiments/cfgs/faster_rcnn_end2end.yml'
-pretrained_model = 'data/pretrained_model/VGG_imagenet.npy'
+#pretrained_model = 'data/pretrained_model/VGG_imagenet.npy'
+pretrained_model = '/playpen/ammirato/Data/Detections/pretrained_models/VGG_imagenet.npy'
 #output_dir = 'models/saved_model3'
-output_dir = ('/playpen/ammirato/Documents/exploring_neural_networks/exploring_pytorch' + 
+output_dir = ('/playpen/ammirato/Data/Detections/' + 
              '/saved_models/')
-save_name_base = 'faster_rcnn_avd_split2_target_driven_fc7+_concat_train2'
+save_name_base = 'faster_rcnn_avd_split2_target_driven_fc7+_concat_vgg_feat_concat_train7'
 
 
-trained_model_path = ('/playpen/ammirato/Documents/exploring_neural_networks/' +
-                     'exploring_pytorch/saved_models/')
-trained_model_name = 'faster_rcnn_voc07_trainval_100000.h5'
-load_trained_model = False 
+trained_model_path = ('/playpen/ammirato/Data/Detections/' +
+                     '/saved_models/')
+trained_model_name = 'faster_rcnn_avd_split2_target_driven_fc7+_concat_vgg_feat_concat_train5_18.h5'
+load_trained_model = False
 trained_epoch=0
 
 start_step = 0
 end_step = 100000
-num_epochs = 20
+num_epochs = 30
 lr_decay_steps = {60000, 80000}
 lr_decay = 1./10
 
@@ -110,9 +113,16 @@ train_list=[
              'Home_014_1',
              'Home_014_2',
             ]
+
+
+test_list=[
+            'Home_003_1',
+          ]
+
 #CREATE TRAIN/TEST splits
 train_set = GetDataSet.get_fasterRCNN_AVD(data_path,
                                           train_list,
+                                          #test_list,
                                           max_difficulty=4,
                                           chosen_ids=[1,2,3,4,5],
                                           by_box=False)
@@ -200,8 +210,16 @@ for epoch in range(num_epochs):
         #    continue
 
         if gt_boxes.shape[0] > 0:#there is at least one gt_box
+            #pick a random target
+            target_ind = np.random.randint(0,train_set.get_num_classes()) 
+            target_data = target_images[target_ind] 
+           
+            #see if the target is in this image
+            target_ind = np.where(gt_boxes[:,4]==(target_ind+1))[0]
+
+ 
             #pick a random object to use as the target here
-            target_ind = np.random.randint(0,gt_boxes.shape[0]) 
+            #target_ind = np.random.randint(0,gt_boxes.shape[0]) 
 
             #gt_boxes = gt_boxes[0,:]
             #gt_boxes = np.expand_dims(gt_boxes,0) 
@@ -209,20 +227,35 @@ for epoch in range(num_epochs):
             #get rid of difficulty
             gt_boxes = gt_boxes[:,0:5]
             #pick the target image to match the gt_box
-            target_data = target_images[int(gt_boxes[target_ind,4]) - 1] 
+            #target_data = target_images[int(gt_boxes[target_ind,4]) - 1] 
             #set the gt_label to 1=object_present
             gt_boxes[target_ind,4] = 1
-            gt_boxes[np.arange(gt_boxes.shape[0])!=target_ind, 4] = 0
-            
+            if target_ind.shape[0] > 0:
+                gt_boxes[np.arange(gt_boxes.shape[0])!=target_ind, 4] = 0
+            else: 
+                gt_boxes[:, 4] = 0
+
+            gt_boxes = np.delete(gt_boxes,np.where(gt_boxes[:,4]==0),0)
+            if gt_boxes.shape[0] == 0:#there is at least one gt_box
+                xs = [0,100]# np.random.randint(0,1920,2)
+                ys = [0,100]# np.random.randint(0,1080,2)
+                gt_boxes = [np.min(xs), np.min(ys), np.max(xs),np.max(ys), 0]
+                gt_boxes = np.expand_dims(gt_boxes,0)
+                gt_boxes = gt_boxes.astype(np.float64) 
+
 
         else:#add a random background box, every so often
-            if np.random.rand() > .1:
+            if np.random.rand() > .01:
                 continue#skip this image
-            xs = np.random.randint(0,1920,2)
-            ys = np.random.randint(0,1080,2)
+            xs = [0,100]# np.random.randint(0,1920,2)
+            ys = [0,100]# np.random.randint(0,1080,2)
             gt_boxes = [np.min(xs), np.min(ys), np.max(xs),np.max(ys), 0]
             gt_boxes = np.expand_dims(gt_boxes,0)
             gt_boxes = gt_boxes.astype(np.float64) 
+
+            #pick a random target
+            target_ind = np.random.randint(0,train_set.get_num_classes()) 
+            target_data = target_images[target_ind] 
 
         im_info = np.zeros((1,3))
         im_info[0,:] = [im_data.shape[1],im_data.shape[2],1]

@@ -384,51 +384,50 @@ if __name__ == '__main__':
     #set up dataset to get ground truth(gt) data
     data_path = '/playpen/ammirato/Data/HalvedRohitData/'
     scene_list=[
-             'Home_006_1',
-             'Home_008_1',
+             'Home_003_1',
+             'Home_003_2',
              #'test',
-             'Home_002_1'
+             'Office_001_1'
              ] 
 
-    max_difficulty=4
+    max_difficulty=3
     dataset = GetDataSet.get_fasterRCNN_AVD(data_path,
                                             scene_list,
-                                            chosen_ids=range(0,28))#[0,1,2,3,4,5])
+                                            chosen_ids=[0,1,2,3,4,5])
     gt_boxes = dataset.get_original_bboxes()
 
-
     #get outputs from testing model
-    trained_model_names = ['faster_rcnn_avd_split2_target_driven_fc7+_concat_0',
-                           'faster_rcnn_avd_split2_target_driven_fc7+_concat_1',
-                           'faster_rcnn_avd_split2_target_driven_fc7+_concat_2',
-                           'faster_rcnn_avd_split2_target_driven_fc7+_concat_3',
-                           'faster_rcnn_avd_split2_target_driven_fc7+_concat_4',
-                           'faster_rcnn_avd_split2_target_driven_fc7+_concat_5',
-                           'faster_rcnn_avd_split2_target_driven_fc7+_concat_6',
-                           'faster_rcnn_avd_split2_target_driven_fc7+_concat_7',
-                           'faster_rcnn_avd_split2_target_driven_fc7+_concat_8',
-                           'faster_rcnn_avd_split2_target_driven_fc7+_concat_9',
-                           'faster_rcnn_avd_split2_target_driven_fc7+_concat_10',
-                           'faster_rcnn_avd_split2_target_driven_fc7+_concat_11',
-                           'faster_rcnn_avd_split2_target_driven_fc7+_concat_12',
-                           'faster_rcnn_avd_split2_target_driven_fc7+_concat_13',
-                           'faster_rcnn_avd_split2_target_driven_fc7+_concat_14',
-                           'faster_rcnn_avd_split2_target_driven_fc7+_concat_15',
-                           'faster_rcnn_avd_split2_target_driven_fc7+_concat_16',
-                           'faster_rcnn_avd_split2_target_driven_fc7+_concat_17',
-                           'faster_rcnn_avd_split2_target_driven_fc7+_concat_18',
-                           'faster_rcnn_avd_split2_target_driven_fc7+_concat_19',
+    trained_model_names = ['faster_rcnn_avd_split2_target_driven_fc7+_concat_vgg_feat_concat_train4_0',
+                           'faster_rcnn_avd_split2_target_driven_fc7+_concat_vgg_feat_concat_train4_1',
+                           'faster_rcnn_avd_split2_target_driven_fc7+_concat_vgg_feat_concat_train4_2',
+                           'faster_rcnn_avd_split2_target_driven_fc7+_concat_vgg_feat_concat_train4_3',
+                           'faster_rcnn_avd_split2_target_driven_fc7+_concat_vgg_feat_concat_train4_4',
+                           'faster_rcnn_avd_split2_target_driven_fc7+_concat_vgg_feat_concat_train4_5',
+                           'faster_rcnn_avd_split2_target_driven_fc7+_concat_vgg_feat_concat_train4_6',
+                           'faster_rcnn_avd_split2_target_driven_fc7+_concat_vgg_feat_concat_train4_7',
+                           'faster_rcnn_avd_split2_target_driven_fc7+_concat_vgg_feat_concat_train4_8',
+                           'faster_rcnn_avd_split2_target_driven_fc7+_concat_vgg_feat_concat_train4_9',
+                           'faster_rcnn_avd_split2_target_driven_fc7+_concat_vgg_feat_concat_train4_10',
+                           'faster_rcnn_avd_split2_target_driven_fc7+_concat_vgg_feat_concat_train4_11',
+                           'faster_rcnn_avd_split2_target_driven_fc7+_concat_vgg_feat_concat_train4_12',
+                           'faster_rcnn_avd_split2_target_driven_fc7+_concat_vgg_feat_concat_train4_13',
+                           'faster_rcnn_avd_split2_target_driven_fc7+_concat_vgg_feat_concat_train4_14',
+                           'faster_rcnn_avd_split2_target_driven_fc7+_concat_vgg_feat_concat_train4_15',
+                           'faster_rcnn_avd_split2_target_driven_fc7+_concat_vgg_feat_concat_train4_16',
+                           'faster_rcnn_avd_split2_target_driven_fc7+_concat_vgg_feat_concat_train4_17',
+                           'faster_rcnn_avd_split2_target_driven_fc7+_concat_vgg_feat_concat_train4_18',
+                           'faster_rcnn_avd_split2_target_driven_fc7+_concat_vgg_feat_concat_train4_19',
                           ]
 
     for model_name in trained_model_names:
 
         with open('/playpen/ammirato/Data/Detections/' + 
-                  'FasterRCNN_AVD/target_driven/' + model_name+'.json') as f:
+                  'FasterRCNN_AVD/' + model_name+'.json') as f:
             det_results = json.load(f)
 
         evaluater = DetectorEvaluater(score_thresholds=np.linspace(0,1,11),
                                       recall_thresholds=np.linspace(0,1,11))
-        m_ap,ap,max_p,errors = evaluater.run(det_results,gt_boxes,[1,2,3,4,5],
+        m_ap,ap,max_p,errors = evaluater.run(det_results,gt_boxes,[0,1,2,3,4,5],
                                              max_difficulty=max_difficulty)
         #print 'MAPish {}'.format(ap[ap.nonzero()].mean())
         print 'MAPish {}'.format(m_ap)
