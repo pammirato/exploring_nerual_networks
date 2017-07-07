@@ -32,27 +32,21 @@ trained_model_path = ('/playpen/ammirato/Data/Detections/' +
 trained_model_names = ['fasterRCNN_avd.h5']
 
 
-trained_model_names = ['faster_rcnn_avd_split2_target_driven_fc7+_concat_vgg_feat_concat_train4_0',
-                       'faster_rcnn_avd_split2_target_driven_fc7+_concat_vgg_feat_concat_train4_1',
-                       'faster_rcnn_avd_split2_target_driven_fc7+_concat_vgg_feat_concat_train4_2',
-                       'faster_rcnn_avd_split2_target_driven_fc7+_concat_vgg_feat_concat_train4_3',
-                       'faster_rcnn_avd_split2_target_driven_fc7+_concat_vgg_feat_concat_train4_4',
-                       'faster_rcnn_avd_split2_target_driven_fc7+_concat_vgg_feat_concat_train4_5',
-                       'faster_rcnn_avd_split2_target_driven_fc7+_concat_vgg_feat_concat_train4_6',
-                       'faster_rcnn_avd_split2_target_driven_fc7+_concat_vgg_feat_concat_train4_7',
-                       'faster_rcnn_avd_split2_target_driven_fc7+_concat_vgg_feat_concat_train4_8',
-                       'faster_rcnn_avd_split2_target_driven_fc7+_concat_vgg_feat_concat_train4_9',
-                       'faster_rcnn_avd_split2_target_driven_fc7+_concat_vgg_feat_concat_train4_10',
-                       'faster_rcnn_avd_split2_target_driven_fc7+_concat_vgg_feat_concat_train4_11',
-                       'faster_rcnn_avd_split2_target_driven_fc7+_concat_vgg_feat_concat_train4_12',
-                       'faster_rcnn_avd_split2_target_driven_fc7+_concat_vgg_feat_concat_train4_13',
-                       'faster_rcnn_avd_split2_target_driven_fc7+_concat_vgg_feat_concat_train4_14',
-                       'faster_rcnn_avd_split2_target_driven_fc7+_concat_vgg_feat_concat_train4_15',
-                       'faster_rcnn_avd_split2_target_driven_fc7+_concat_vgg_feat_concat_train4_16',
-                       'faster_rcnn_avd_split2_target_driven_fc7+_concat_vgg_feat_concat_train4_17',
-                       'faster_rcnn_avd_split2_target_driven_fc7+_concat_vgg_feat_concat_train4_18',
-                       'faster_rcnn_avd_split2_target_driven_fc7+_concat_vgg_feat_concat_train4_19',
-                      ]
+trained_model_names=[#'faster_rcnn_avd_split2_target_driven_fc7+_concat_vgg_feat_concat_train7_19',
+                    'FRA_TD_1-5_archA_2_50',
+                    'FRA_TD_1-5_archA_2_40',
+                    'FRA_TD_1-5_archA_2_30',
+                    'FRA_TD_1-5_archA_2_20',
+                    'FRA_TD_1-5_archA_2_10',
+                    'FRA_TD_1-5_archA_2_45',
+                    'FRA_TD_1-5_archA_2_0',
+                    #'FRA_TD_1-5_archB_30',
+                    #'FRA_TD_1-5_archB_10',
+                    #'FRA_TD_1-5_archB_20',
+                    #'FRA_TD_1-5_archB_25',
+                    #'FRA_TD_1-5_archB_15',
+                    #'FRA_TD_1-5_archB_5',
+                    ]
 rand_seed = 1024
 
 #save_name = 'faster_rcnn_100000'
@@ -225,7 +219,7 @@ def test_net(name, net, dataloader, max_per_image=300, thresh=0.05, vis=False,
             #make a list of all detections in this image
             class_dets = all_boxes[j][i]
             #put class id in the box
-            class_dets = np.insert(class_dets,4,j,axis=1)
+            class_dets = np.insert(class_dets,4,j+1,axis=1)
             all_image_dets = np.vstack((all_image_dets,class_dets))
             #for box in class_dets:
             #    result = {'image_name':batch[1][1],
@@ -268,7 +262,8 @@ if __name__ == '__main__':
                                             scene_list,
                                             preload=False,
                                             chosen_ids=[1,2,3,4,5], 
-                                            by_box=True)
+                                            by_box=False,
+                                            fraction_of_no_box=1)
 
     #create train/test loaders, with CUSTOM COLLATE function
     dataloader = torch.utils.data.DataLoader(dataset,

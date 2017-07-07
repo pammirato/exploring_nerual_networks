@@ -34,9 +34,9 @@ trained_model_names = [#'faster_rcnn_avd_split2_instances1-5_0',
                        #'faster_rcnn_avd_split2_instances1-5_1',
                        #'faster_rcnn_avd_split2_instances1-5_2',
                        #'faster_rcnn_avd_split2_instances1-5_3',
-                       #'faster_rcnn_avd_split2_instances1-5_4',
-                       #'faster_rcnn_avd_split2_instances1-5_5',
-                       'faster_rcnn_avd_split2_6',
+                       #'faster_rcnn_avd_split2_instances1-5_8',
+                       #'faster_rcnn_avd_split2_instances1-5_19',
+                       'FRA_1-28_18',
                        #'faster_rcnn_avd_split2_7',
                        #'faster_rcnn_avd_split2_8',
                        #'faster_rcnn_avd_split2_9',
@@ -48,7 +48,7 @@ trained_model_names = [#'faster_rcnn_avd_split2_instances1-5_0',
                        #'faster_rcnn_avd_split2_15',
                        #'faster_rcnn_avd_split2_16',
                        #'faster_rcnn_avd_split2_17',
-                       'faster_rcnn_avd_split2_18',
+                       #'faster_rcnn_avd_split2_18',
                        #'faster_rcnn_avd_split2_19',
                       ]
 rand_seed = 1024
@@ -248,17 +248,17 @@ if __name__ == '__main__':
 #    imdb.competition_mode(on=True)
     data_path = '/playpen/ammirato/Data/HalvedRohitData/'
     scene_list=[
-             'Home_006_1',
-             'Home_008_1',
+             'Home_003_1',
+             'Home_003_2',
              #'test',
-             'Home_002_1'
+             'Office_001_1'
              ]
 
     #CREATE TRAIN/TEST splits
     dataset = GetDataSet.get_fasterRCNN_AVD(data_path,
                                             scene_list,
                                             preload=False,
-                                            chosen_ids=range(0,28))
+                                            chosen_ids=range(28))
 
     #create train/test loaders, with CUSTOM COLLATE function
     dataloader = torch.utils.data.DataLoader(dataset,

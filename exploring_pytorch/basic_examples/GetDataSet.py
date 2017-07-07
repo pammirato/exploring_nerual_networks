@@ -223,6 +223,7 @@ def get_fasterRCNN_AVD(root, scene_list,
                        max_difficulty=4,
                        chosen_ids=None,
                        by_box=False,
+                       fraction_of_no_box=.1,
                       ):
     """
     Returns a dataloader for the AVD dataset for use with training FasterRCNN.
@@ -273,7 +274,8 @@ def get_fasterRCNN_AVD(root, scene_list,
                          classification=False,
                          preload_images=preload,
                          by_box=by_box,
-                         class_id_to_name=id_to_name_dict)
+                         class_id_to_name=id_to_name_dict,
+                         fraction_of_no_box=fraction_of_no_box)
 
     return dataset
 

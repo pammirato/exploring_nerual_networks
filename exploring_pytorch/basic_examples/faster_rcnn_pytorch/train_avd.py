@@ -45,7 +45,7 @@ pretrained_model = 'data/pretrained_model/VGG_imagenet.npy'
 #output_dir = 'models/saved_model3'
 output_dir = ('/playpen/ammirato/Documents/exploring_neural_networks/exploring_pytorch' + 
              '/saved_models/')
-save_name_base = 'faster_rcnn_avd_split2_instances1-5'
+save_name_base = 'FRA_1-5__2'
 
 
 trained_model_path = ('/playpen/ammirato/Documents/exploring_neural_networks/' +

@@ -390,24 +390,17 @@ if __name__ == '__main__':
              'Office_001_1'
              ] 
 
-    max_difficulty=4
-    chosen_ids = range(6)
+    max_difficulty=3
     dataset = GetDataSet.get_fasterRCNN_AVD(data_path,
                                             scene_list,
-                                            chosen_ids=chosen_ids,
-                                            fraction_of_no_box=1)
+                                            chosen_ids=[0,1,2,3,4,5])
     gt_boxes = dataset.get_original_bboxes()
 
     #get outputs from testing model
-    trained_model_names = [
-                           'FRA_TD_1-5_archA_2_50',
-                           'FRA_TD_1-5_archA_2_40',
-                           'FRA_TD_1-5_archA_2_30',
-                           #'FRA_TD_1-5_archA_33',
-                           #'FRA_TD_1-5_archB_20',
-                           #'FRA_TD_1-5_archB_30',
-                           #'FRA_TD_archA_2_20',
-                           #'FRA_TD_archA_2_30',
+    trained_model_names = ['faster_rcnn_avd_split2_target_driven_fc7+_concat_vgg_feat_concat_train7_33',
+                           #'faster_rcnn_avd_split2_instances1-5_8',
+                           #'faster_rcnn_avd_split2_instances1-5_19',
+                           #'faster_rcnn_avd_split2_6',
                           ]
 
     for model_name in trained_model_names:
@@ -418,7 +411,7 @@ if __name__ == '__main__':
 
         evaluater = DetectorEvaluater(score_thresholds=np.linspace(0,1,11),
                                       recall_thresholds=np.linspace(0,1,11))
-        m_ap,ap,max_p,errors,gt_total = evaluater.run(det_results,gt_boxes,chosen_ids,
+        m_ap,ap,max_p,errors,gt_total = evaluater.run(det_results,gt_boxes,[0,1,2,3,4,5],
                                              max_difficulty=max_difficulty)
         #print 'MAPish {}'.format(ap[ap.nonzero()].mean())
         print 'MAPish {}'.format(m_ap)

@@ -39,7 +39,7 @@ class RPN(nn.Module):
         #first 5 conv layers of VGG? only resizing is 4 max pools
         self.features = VGG16(bn=False)
 
-        #self.target_conv = Conv2d(512,512,10)
+        self.target_conv = Conv2d(512,512,10)
         self.target_embedding = FC(512 +  512, 512);
 
 
@@ -66,7 +66,7 @@ class RPN(nn.Module):
         target_data = network.np_to_variable(target_data, is_cuda=True)
         target_data = target_data.permute(0, 3, 1, 2)
         target_features = self.features(target_data)
-        #target_features = self.target_conv(target_features) 
+        target_features = self.target_conv(target_features) 
         target_features = target_features[:,:,0,0] 
         #combine image and target features 
         #just add them together

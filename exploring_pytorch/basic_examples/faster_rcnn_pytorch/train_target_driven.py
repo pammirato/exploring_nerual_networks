@@ -8,7 +8,7 @@ import cv2
 import matplotlib.pyplot as plt
 
 from faster_rcnn import network
-from faster_rcnn.faster_rcnn_target_driven import FasterRCNN, RPN
+from faster_rcnn.faster_rcnn_target_driven_archA import FasterRCNN, RPN
 from faster_rcnn.utils.timer import Timer
 
 import faster_rcnn.roi_data_layer.roidb as rdl_roidb
@@ -52,18 +52,18 @@ pretrained_model = '/playpen/ammirato/Data/Detections/pretrained_models/VGG_imag
 #output_dir = 'models/saved_model3'
 output_dir = ('/playpen/ammirato/Data/Detections/' + 
              '/saved_models/')
-save_name_base = 'faster_rcnn_avd_split2_target_driven_fc7+_concat_vgg_feat_concat_train7'
+save_name_base = 'FRA_TD_1-5_archA_2'
 
 
 trained_model_path = ('/playpen/ammirato/Data/Detections/' +
                      '/saved_models/')
-trained_model_name = 'faster_rcnn_avd_split2_target_driven_fc7+_concat_vgg_feat_concat_train5_18.h5'
-load_trained_model = False
-trained_epoch=0
+trained_model_name = 'faster_rcnn_avd_split2_target_driven_fc7+_concat_vgg_feat_concat_train7_29.h5'
+load_trained_model = False 
+trained_epoch=29
 
 start_step = 0
 end_step = 100000
-num_epochs = 30
+num_epochs = 100
 lr_decay_steps = {60000, 80000}
 lr_decay = 1./10
 
@@ -83,7 +83,7 @@ cfg_from_file(cfg_file)
 lr = cfg.TRAIN.LEARNING_RATE
 momentum = cfg.TRAIN.MOMENTUM
 weight_decay = cfg.TRAIN.WEIGHT_DECAY
-disp_interval = cfg.TRAIN.DISPLAY
+disp_interval =100# cfg.TRAIN.DISPLAY
 log_interval = cfg.TRAIN.LOG_IMAGE_ITERS
 
 # load data
@@ -199,7 +199,11 @@ re_cnt = False
 t = Timer()
 t.tic()
 
+
+
 for epoch in range(num_epochs):
+    tv_cnt = 0
+    ir_cnt = 0
     for step,batch in enumerate(trainloader):
 
         # get one batch
@@ -237,16 +241,20 @@ for epoch in range(num_epochs):
 
             gt_boxes = np.delete(gt_boxes,np.where(gt_boxes[:,4]==0),0)
             if gt_boxes.shape[0] == 0:#there is at least one gt_box
+                if np.random.rand() > .6:
+                    continue#skip this image
                 xs = [0,100]# np.random.randint(0,1920,2)
                 ys = [0,100]# np.random.randint(0,1080,2)
                 gt_boxes = [np.min(xs), np.min(ys), np.max(xs),np.max(ys), 0]
                 gt_boxes = np.expand_dims(gt_boxes,0)
                 gt_boxes = gt_boxes.astype(np.float64) 
+            else:
+                tv_cnt += 1               
 
 
         else:#add a random background box, every so often
-            if np.random.rand() > .01:
-                continue#skip this image
+            #if np.random.rand() > .1:
+            #    continue#skip this image
             xs = [0,100]# np.random.randint(0,1920,2)
             ys = [0,100]# np.random.randint(0,1080,2)
             gt_boxes = [np.min(xs), np.min(ys), np.max(xs),np.max(ys), 0]
@@ -263,6 +271,7 @@ for epoch in range(num_epochs):
         dontcare_areas = np.zeros((0,4))
 
         # forward
+        ir_cnt +=1
         net(target_data,im_data, im_info, gt_boxes, gt_ishard, dontcare_areas)
         loss = net.loss + net.rpn.loss
 
@@ -287,8 +296,9 @@ for epoch in range(num_epochs):
 
             #log_text = 'step %d, image: %s, loss: %.4f, fps: %.2f (%.2fs per batch)' % (
             #    step, blobs['im_name'], train_loss / step_cnt, fps, 1./fps)
-            log_text = 'step %d, loss: %.4f, fps: %.2f (%.2fs per batch)' % (
-                step,  train_loss / step_cnt, fps, 1./fps)
+            log_text = 'step %d, loss: %.4f, fps: %.2f (%.2fs per batch) tv_cnt:%d' \
+                       'ir_cnt:%d epoch:%d' % (
+                step,  train_loss / step_cnt, fps, 1./fps, tv_cnt, ir_cnt, epoch)
             log_print(log_text, color='green', attrs=['bold'])
 
             if _DEBUG:
@@ -312,13 +322,14 @@ for epoch in range(num_epochs):
                 exp.add_scalar_dict(losses, step=step)
 
     #epoch over
-    if load_trained_model:
-        save_name = os.path.join(output_dir, save_name_base+'_{}.h5'.format(
-                                              epoch+trained_epoch))
-    else:
-        save_name = os.path.join(output_dir, save_name_base+'_{}.h5'.format(epoch))
-    network.save_net(save_name, net)
-    print('save model: {}'.format(save_name))
+    if epoch % 5 == 0:
+        if load_trained_model:
+            save_name = os.path.join(output_dir, save_name_base+'_{}.h5'.format(
+                                                  epoch+trained_epoch+1))
+        else:
+            save_name = os.path.join(output_dir, save_name_base+'_{}.h5'.format(epoch))
+        network.save_net(save_name, net)
+        print('save model: {}'.format(save_name))
 
 
 #    if step in lr_decay_steps:
