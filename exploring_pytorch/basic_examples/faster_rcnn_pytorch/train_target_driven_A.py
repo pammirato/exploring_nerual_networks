@@ -8,8 +8,7 @@ import cv2
 import matplotlib.pyplot as plt
 
 from faster_rcnn import network
-from faster_rcnn.faster_rcnn_target_driven import FasterRCNN, RPN
-#from faster_rcnn.faster_rcnn_target_driven import FasterRCNN, RPN
+from faster_rcnn.faster_rcnn_target_driven_archA import FasterRCNN, RPN
 from faster_rcnn.utils.timer import Timer
 
 import faster_rcnn.roi_data_layer.roidb as rdl_roidb
@@ -53,18 +52,18 @@ pretrained_model = '/playpen/ammirato/Data/Detections/pretrained_models/VGG_imag
 #output_dir = 'models/saved_model3'
 output_dir = ('/playpen/ammirato/Data/Detections/' + 
              '/saved_models/')
-save_name_base = 'FRA_TD_1-5_archB_2'
-save_freq = 10 
+save_name_base = 'FRA_TD_1-5_archA_5'
+
 
 trained_model_path = ('/playpen/ammirato/Data/Detections/' +
                      '/saved_models/')
-trained_model_name = 'FRA_TD_1-5_archB_1_59_2.30055.h5'
+trained_model_name = 'FRA_TD_1-5_archA_3_30.h5'
 load_trained_model = False 
-trained_epoch =59
+trained_epoch=500
 
 start_step = 0
 end_step = 100000
-num_epochs = 150
+num_epochs = 100
 lr_decay_steps = {60000, 80000}
 lr_decay = 1./10
 
@@ -119,15 +118,14 @@ test_list=[
             'Home_003_1',
           ]
 
-chosen_ids = range(6)
 #CREATE TRAIN/TEST splits
 train_set = GetDataSet.get_fasterRCNN_AVD(data_path,
                                           train_list,
                                           #test_list,
                                           max_difficulty=4,
-                                          chosen_ids=chosen_ids,
-                                          by_box=False,
-                                          fraction_of_no_box=.1)
+                                          chosen_ids=[0,1,2,3,4,5],
+                                          by_box=True,
+                                          fraction_of_no_box=.01)
 
 #create train/test loaders, with CUSTOM COLLATE function
 trainloader = torch.utils.data.DataLoader(train_set,
@@ -136,7 +134,7 @@ trainloader = torch.utils.data.DataLoader(train_set,
                                           collate_fn=AVD.collate)
 
 #load all target images
-target_path = '/playpen/ammirato/Data/big_bird_crops_16'
+target_path = '/playpen/ammirato/Data/big_bird_crops_160'
 image_names = os.listdir(target_path)
 image_names.sort()
 target_images = []
@@ -215,31 +213,33 @@ for epoch in range(num_epochs):
         im_data=batch[0].unsqueeze(0).numpy()
         im_data=np.transpose(im_data,(0,2,3,1))
         gt_boxes = np.asarray(batch[1][0],dtype=np.float32)
-        if gt_boxes.shape[0] == 0:
-            gt_boxes = np.asarray([[0,0,1,1,0]])
- 
-        #get the gt inds that are in this image, not counting 0(background)
-        objects_present = gt_boxes[:,4]
-        objects_present = objects_present[np.where(objects_present!=0)[0]]
-        not_present = np.asarray([ind for ind in chosen_ids 
-                                          if ind not in objects_present and 
-                                             ind != 0]) 
+        
+        #get the label of the object that is in the image
+        gt_ind = gt_boxes[0,4]
 
-        #pick a random target, with a bias towards choosing a target that 
-        #is in the image. Also pick just one gt_box, since there is one target
-        if np.random.rand() < .3 and objects_present.shape[0]!=0:
-            target_ind = int(np.random.choice(objects_present))
-            gt_boxes = gt_boxes[np.where(gt_boxes[:,4]==target_ind)[0],:-1]
-            gt_boxes[0,4] = 1
+        if gt_ind == 0:
+            breakp = 1
 
+        #pick a target object, with a bias towards picking the object
+        #that is in the image. And assign the gt_box as 0(not the target) or 1
+        if np.random.rand() < .25 or gt_ind==0:  
+            target_ind = np.random.randint(0,len(target_images)-1)
+            gt_boxes[0,4] = 0
+        else:
+            target_ind = int(gt_ind -1)
+            gt_boxes[0,4] = 1 
+
+
+        targets_cnt[0,target_ind] +=1 
+        target_data = target_images[target_ind] 
+       
+        #get rid of difficulty
+        gt_boxes = gt_boxes[:,0:5]
+
+        if target_ind == gt_ind-1:
             tv_cnt += 1
-            targets_cnt[0,target_ind-1] += 1 
-        else:#the target is not in the image, give a dummy background box
-            target_ind = int(np.random.choice(not_present))
-            gt_boxes = np.asarray([[0,0,1,1,0]])
+            targets_cnt[1,target_ind] += 1 
 
-        target_data = target_images[target_ind-1]
-        targets_cnt[1,target_ind-1] += 1 
 
 
         im_info = np.zeros((1,3))
@@ -252,11 +252,11 @@ for epoch in range(num_epochs):
         net(target_data,im_data, im_info, gt_boxes, gt_ishard, dontcare_areas)
         loss = net.loss + net.rpn.loss
 
-        #if _DEBUG:
-            #tp += float(net.tp)
-            #tf += float(net.tf)
-            #fg += net.fg_cnt
-            #bg += net.bg_cnt
+        if _DEBUG:
+            tp += float(net.tp)
+            tf += float(net.tf)
+            fg += net.fg_cnt
+            bg += net.bg_cnt
 
         train_loss += loss.data[0]
         step_cnt += 1
@@ -303,12 +303,12 @@ for epoch in range(num_epochs):
                 exp.add_scalar_dict(losses, step=step)
 
     #epoch over
-    if epoch % save_freq == 0:
+    if epoch % 1 == 0:
         if load_trained_model:
             save_name = os.path.join(output_dir, save_name_base+'_{}.h5'.format(
                                                   epoch+trained_epoch+1))
         else:
-            save_name = os.path.join(output_dir, save_name_base+'_{}_{:1.5f}.h5'.format(epoch, train_loss/step_cnt))
+            save_name = os.path.join(output_dir, save_name_base+'_{}.h5'.format(epoch))
         network.save_net(save_name, net)
         print('save model: {}'.format(save_name))
 

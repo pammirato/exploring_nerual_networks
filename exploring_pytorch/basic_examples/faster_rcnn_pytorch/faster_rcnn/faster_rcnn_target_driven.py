@@ -107,8 +107,9 @@ class RPN(nn.Module):
 
         # proposal layer
         cfg_key = 'TRAIN' if self.training else 'TEST'
-        rois = self.proposal_layer(rpn_cls_prob_reshape, rpn_bbox_pred, im_info,
-                                   cfg_key, self._feat_stride, self.anchor_scales)
+        rois,scores = self.proposal_layer(rpn_cls_prob_reshape, rpn_bbox_pred, im_info,
+                                   cfg_key, self._feat_stride, self.anchor_scales,
+                                         return_scores=True)
 
         # generating training labels and build the rpn loss
         if self.training:
@@ -117,7 +118,7 @@ class RPN(nn.Module):
                                                 im_info, self._feat_stride, self.anchor_scales)
             self.cross_entropy, self.loss_box = self.build_loss(rpn_cls_score_reshape, rpn_bbox_pred, rpn_data)
 
-        return target_features, features, rois
+        return target_features, features, rois, scores
 
     def build_loss(self, rpn_cls_score_reshape, rpn_bbox_pred, rpn_data):
         # classification loss
@@ -134,7 +135,8 @@ class RPN(nn.Module):
         #weight = torch.FloatTensor([0,10])
         #weight = weight.cuda()
         #rpn_cross_entropy = F.cross_entropy(rpn_cls_score, rpn_label, weight=weight)
-        rpn_cross_entropy = F.cross_entropy(rpn_cls_score, rpn_label)
+        rpn_cross_entropy = F.cross_entropy(rpn_cls_score, rpn_label, size_average=False)
+        #rpn_cross_entropy = F.cross_entropy(rpn_cls_score, rpn_label)
 
         # box loss
         rpn_bbox_targets, rpn_bbox_inside_weights, rpn_bbox_outside_weights = rpn_data[1:]
@@ -160,12 +162,21 @@ class RPN(nn.Module):
         return x
 
     @staticmethod
-    def proposal_layer(rpn_cls_prob_reshape, rpn_bbox_pred, im_info, cfg_key, _feat_stride, anchor_scales):
+    def proposal_layer(rpn_cls_prob_reshape, rpn_bbox_pred, im_info, cfg_key, _feat_stride, anchor_scales, return_scores=False):
         rpn_cls_prob_reshape = rpn_cls_prob_reshape.data.cpu().numpy()
         rpn_bbox_pred = rpn_bbox_pred.data.cpu().numpy()
-        x = proposal_layer_py(rpn_cls_prob_reshape, rpn_bbox_pred, im_info, cfg_key, _feat_stride, anchor_scales)
-        x = network.np_to_variable(x, is_cuda=True)
-        return x.view(-1, 5)
+        if return_scores:
+            x,y = proposal_layer_py(rpn_cls_prob_reshape, rpn_bbox_pred, im_info, cfg_key, _feat_stride, anchor_scales,return_scores=return_scores)
+            x = network.np_to_variable(x, is_cuda=True)
+            #add 0's for bg class score
+            z = np.zeros((x.size()[0], 2))
+            z[:,1] = y[:,0]
+            z = network.np_to_variable(z,is_cuda=True)
+            return x.view(-1, 5), z
+        else:
+            x = proposal_layer_py(rpn_cls_prob_reshape, rpn_bbox_pred, im_info, cfg_key, _feat_stride, anchor_scales,return_scores=return_scores)
+            x = network.np_to_variable(x, is_cuda=True)
+            return x.view(-1, 5)
 
     @staticmethod
     def anchor_target_layer(rpn_cls_score, gt_boxes, gt_ishard, dontcare_areas, im_info, _feat_stride, anchor_scales):
@@ -237,12 +248,12 @@ class FasterRCNN(nn.Module):
         ###    self.n_classes = len(classes)
 
         self.rpn = RPN()
-        self.roi_pool = RoIPool(7, 7, 1.0/16)
-        self.fc6 = FC(512 * 7 * 7, 4096)
-        self.fc7 = FC(4096, 4096)
-        self.target_embedding= FC(4096 + 512, 4096)
-        self.score_fc = FC(4096, self.n_classes, relu=False)
-        self.bbox_fc = FC(4096, self.n_classes * 4, relu=False)
+        #self.roi_pool = RoIPool(7, 7, 1.0/16)
+        #self.fc6 = FC(512 * 7 * 7, 4096)
+        #self.fc7 = FC(4096, 4096)
+        #self.target_embedding= FC(4096 + 512, 4096)
+        #self.score_fc = FC(4096, self.n_classes, relu=False)
+        #self.bbox_fc = FC(4096, self.n_classes * 4, relu=False)
 
         # loss
         self.cross_entropy = None
@@ -260,38 +271,49 @@ class FasterRCNN(nn.Module):
         return self.cross_entropy + self.loss_box * 10
 
     def forward(self, target_data, im_data, im_info, gt_boxes=None, gt_ishard=None, dontcare_areas=None):
-        target_features, features, rois = self.rpn(target_data, im_data, im_info, gt_boxes, gt_ishard, dontcare_areas)
+        target_features, features, rois,scores = self.rpn(target_data, im_data, im_info, gt_boxes, gt_ishard, dontcare_areas)
+
+        #if self.training:
+        #    roi_data = self.proposal_target_layer(rois, gt_boxes, gt_ishard, dontcare_areas, self.n_classes)
+        #    rois = roi_data[0]
+
+        ## roi pool
+        #pooled_features = self.roi_pool(features, rois)
+        #x = pooled_features.view(pooled_features.size()[0], -1)
+
+        ##x = torch.cat([x,target_features[0,:].unsqueeze(0).expand(
+        #    
+        ##x = self.embedding(x)
+
+        #x = self.fc6(x)
+        #x = F.dropout(x, training=self.training)
+        #x = self.fc7(x)
+        #x = F.dropout(x, training=self.training)
+
+        ##concatenate image features with target image features
+        #x = torch.cat([x,target_features.expand(x.size()[0],target_features.size()[1])],1)
+        ##embed the concatenated features
+        #x = self.target_embedding(x)
+
+        #cls_score = self.score_fc(x)
+        #cls_prob = F.softmax(cls_score)
+        #bbox_pred = self.bbox_fc(x)
+
+        #if self.training:
+        #    self.cross_entropy, self.loss_box = self.build_loss(cls_score, bbox_pred, roi_data)
+
+        #return cls_prob, bbox_pred, rois
 
         if self.training:
-            roi_data = self.proposal_target_layer(rois, gt_boxes, gt_ishard, dontcare_areas, self.n_classes)
-            rois = roi_data[0]
+            self.cross_entropy = network.np_to_variable(np.zeros(1))
+            self.loss_box = network.np_to_variable(np.zeros(1))
 
-        # roi pool
-        pooled_features = self.roi_pool(features, rois)
-        x = pooled_features.view(pooled_features.size()[0], -1)
+        bbox_pred = network.np_to_variable(np.zeros((rois.size()[0],8)))
 
-        #x = torch.cat([x,target_features[0,:].unsqueeze(0).expand(
-            
-        #x = self.embedding(x)
 
-        x = self.fc6(x)
-        x = F.dropout(x, training=self.training)
-        x = self.fc7(x)
-        x = F.dropout(x, training=self.training)
+        return scores, bbox_pred, rois
 
-        #concatenate image features with target image features
-        x = torch.cat([x,target_features.expand(x.size()[0],target_features.size()[1])],1)
-        #embed the concatenated features
-        x = self.target_embedding(x)
 
-        cls_score = self.score_fc(x)
-        cls_prob = F.softmax(cls_score)
-        bbox_pred = self.bbox_fc(x)
-
-        if self.training:
-            self.cross_entropy, self.loss_box = self.build_loss(cls_score, bbox_pred, roi_data)
-
-        return cls_prob, bbox_pred, rois
 
     def build_loss(self, cls_score, bbox_pred, roi_data):
         # classification loss

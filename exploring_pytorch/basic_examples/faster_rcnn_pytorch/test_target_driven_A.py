@@ -5,7 +5,7 @@ import cPickle
 import numpy as np
 
 from faster_rcnn import network
-from faster_rcnn.faster_rcnn_target_driven import FasterRCNN, RPN
+from faster_rcnn.faster_rcnn_target_driven_archA import FasterRCNN, RPN
 from faster_rcnn.utils.timer import Timer
 from faster_rcnn.fast_rcnn.nms_wrapper import nms
 
@@ -33,13 +33,8 @@ trained_model_names = ['fasterRCNN_avd.h5']
 
 
 trained_model_names=[#'faster_rcnn_avd_split2_target_driven_fc7+_concat_vgg_feat_concat_train7_19',
-                    'FRA_TD_1-5_archA_2_50',
-                    'FRA_TD_1-5_archA_2_40',
-                    'FRA_TD_1-5_archA_2_30',
-                    'FRA_TD_1-5_archA_2_20',
-                    'FRA_TD_1-5_archA_2_10',
-                    'FRA_TD_1-5_archA_2_45',
-                    'FRA_TD_1-5_archA_2_0',
+                    'FRA_TD_1-5_archA_5_30',
+                    'FRA_TD_1-5_archA_5_39',
                     #'FRA_TD_1-5_archB_30',
                     #'FRA_TD_1-5_archB_10',
                     #'FRA_TD_1-5_archB_20',
@@ -59,13 +54,19 @@ target_path = '/playpen/ammirato/Data/big_bird_crops_160'
 image_names = os.listdir(target_path)
 image_names.sort()
 target_images = []
-for il, name in enumerate(image_names):
-    if il >4:
-        continue
+#for il, name in enumerate(image_names):
+#    if il >4:
+#        continue
+#    target_data = cv2.imread(os.path.join(target_path,name))
+#    target_data = np.expand_dims(target_data,axis=0)
+#    target_images.append(target_data)
+
+means = np.array([[[102.9801, 115.9465, 122.7717]]])
+for name in image_names:
     target_data = cv2.imread(os.path.join(target_path,name))
+    target_data = target_data - means
     target_data = np.expand_dims(target_data,axis=0)
     target_images.append(target_data)
-
 
 
 
@@ -93,6 +94,7 @@ def vis_detections(im, class_name, dets, thresh=0.8):
             cv2.putText(im, '%s: %.3f' % (class_name, score), (bbox[0], bbox[1] + 15), cv2.FONT_HERSHEY_PLAIN,
                         1.0, (0, 0, 255), thickness=1)
     return im
+
 
 
 #def im_detect(net, image):
@@ -261,7 +263,7 @@ if __name__ == '__main__':
     dataset = GetDataSet.get_fasterRCNN_AVD(data_path,
                                             scene_list,
                                             preload=False,
-                                            chosen_ids=[1,2,3,4,5], 
+                                            chosen_ids=[1,2,3,4,5,6], 
                                             by_box=False,
                                             fraction_of_no_box=1)
 

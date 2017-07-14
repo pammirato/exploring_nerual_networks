@@ -91,7 +91,11 @@ class  DetectorEvaluater(object):
         con_errors = {} 
         bg_errors = {} 
         nms_errors = {} 
+        correct_cnt = {}
 
+
+        no_boxes_outputted = 0 
+        skipped_images = 0
 
         #dicts from class id to num right/wrong, total num of gt boxes
         right_wrong = {}
@@ -106,6 +110,7 @@ class  DetectorEvaluater(object):
             con_errors[cid] = 0 
             bg_errors[cid] = 0 
             nms_errors[cid] = 0
+            correct_cnt[cid] = 0
 
 
 
@@ -114,6 +119,11 @@ class  DetectorEvaluater(object):
 
         #for each image 
         for image_name in all_image_names: 
+
+            if image_name == '000320009230101.jpg': 
+                breakp=1         
+
+
 
             #get the gt and detected boxes            
             gt_boxes = np.asarray(gt_labels[image_name])
@@ -124,10 +134,12 @@ class  DetectorEvaluater(object):
             try:
                 det_boxes = np.asarray(det_results[image_name])
             except:
+                #print 'No detections for this image!'
+                skipped_images +=1 
                 continue
             if det_boxes.shape[0] == 0:
                 det_boxes = np.zeros((0,6))
-
+                no_boxes_outputted += 1
             #get ious of all gt_boxes with all det_boxes
             gt_boxes_iou = np.zeros((gt_boxes.shape[0], det_boxes.shape[0]))
             for il,gt_box in enumerate(gt_boxes):
@@ -171,6 +183,7 @@ class  DetectorEvaluater(object):
                             #see if  gt_box is already detected
                             if not gt_box_detected[0]:
                                 correct = True 
+                                correct_cnt[cid] += 1
                                 #mark gt_box as detected
                                 gt_box_detected[0] = 1
                             else:#this box should have been supressed?
@@ -188,6 +201,15 @@ class  DetectorEvaluater(object):
                                     con_errors[cid] += 1
                                 else:
                                     bg_errors[cid] += 1                                    
+                    else:#there was no gt box for this class
+                        #did if have iou with another gt_box?
+                        #get this boxes iou with all gt boxes
+                        boxes_iou = gt_boxes_iou[:,box_ind]
+                        iou_inds = np.where(boxes_iou > self.iou_threshold)[0]
+                        if iou_inds.shape[0] > 0:
+                            con_errors[cid] += 1
+                        else:
+                            bg_errors[cid] += 1                                    
                             
                     #mark correct/wrong for each score threshold
                     for il,score_thresh in enumerate(self.score_thresholds):
@@ -197,6 +219,8 @@ class  DetectorEvaluater(object):
                                     right_wrong[cid][il,RIGHT] += 1
                             else: 
                                 right_wrong[cid][il,WRONG] += 1
+                                #if gt_class_box[0,5] <= max_difficulty:
+                                #    right_wrong[cid][il,WRONG] += 1
 
         self.right_wrong = right_wrong
         self.gt_total = gt_total 
@@ -265,10 +289,16 @@ class  DetectorEvaluater(object):
         all_errors['missed'] = missed_errors 
         all_errors['con'] = con_errors 
         all_errors['bg'] = bg_errors 
+        all_errors['correct'] = correct_cnt
+
+        image_counts = {}
+        image_counts['skipped_images'] = skipped_images
+        image_counts['no_boxes_outputted'] = no_boxes_outputted
+        image_counts['total images'] = len(all_image_names)
 
         #return  map
         mean_ap = avg_prec[np.where(avg_prec>=0)].mean()
-        return [mean_ap, avg_prec, all_max_precisions, all_errors, gt_total]
+        return [mean_ap, avg_prec, all_max_precisions, all_errors, gt_total, image_counts]
 
 
 
@@ -400,9 +430,38 @@ if __name__ == '__main__':
 
     #get outputs from testing model
     trained_model_names = [
-                           'FRA_TD_1-5_archA_2_50',
-                           'FRA_TD_1-5_archA_2_40',
-                           'FRA_TD_1-5_archA_2_30',
+                           #'FRA_TD_1-5_archA_4_10',
+                           #'FRA_TD_1-5_archB_1_0',
+                           #'FRA_TD_1-5_archB_1_3',
+                           #'FRA_TD_1-5_archB_1_6',
+                           #'FRA_TD_1-5_archB_1_9',
+                           #'FRA_TD_1-5_archB_1_12',
+                           #'FRA_TD_1-5_archB_1_15',
+                           #'FRA_TD_1-5_archB_1_18',
+                           #'FRA_TD_1-5_archB_1_21',
+                           #'FRA_TD_1-5_archB_1_24',
+                           #'FRA_TD_1-5_archB_1_27',
+                           #'FRA_TD_1-5_archB_1_30',
+                           #'FRA_TD_1-5_archB_1_33',
+                           #'FRA_TD_1-5_archB_1_36',
+                           #'FRA_TD_1-5_archB_1_39',
+                           #'FRA_TD_1-5_archB_1_42',
+                           #'FRA_TD_1-5_archB_1_45',
+                           #'FRA_TD_1-5_archB_1_48',
+                           #'FRA_TD_1-5_archB_1_51',
+                           #'FRA_TD_1-5_archB_1_54',
+                           #'FRA_TD_1-5_archB_1_57',
+                           #'FRA_TD_1-5_archB_1_65',
+                           'FRA_TD_1-5_archB_1_70',
+                           #'FRA_TD_1-5_archA_5_12',
+                           #'FRA_TD_1-5_archA_5_42',
+                           'FRA_TD_1-5_archA_5_39',
+                           #'FRA_TD_1-5_archA_5_36',
+                           #'FRA_TD_1-5_archA_5_33',
+                           'FRA_TD_1-5_archA_5_30',
+                           #'FRA_TD_1-5_archA_5_27',
+                           #'FRA_TD_1-5_archA_5_30',
+                           #'FRA_TD_1-5_archA_5_39',
                            #'FRA_TD_1-5_archA_33',
                            #'FRA_TD_1-5_archB_20',
                            #'FRA_TD_1-5_archB_30',
@@ -418,7 +477,9 @@ if __name__ == '__main__':
 
         evaluater = DetectorEvaluater(score_thresholds=np.linspace(0,1,11),
                                       recall_thresholds=np.linspace(0,1,11))
-        m_ap,ap,max_p,errors,gt_total = evaluater.run(det_results,gt_boxes,chosen_ids,
-                                             max_difficulty=max_difficulty)
+        m_ap,ap,max_p,errors,gt_total, image_counts = evaluater.run(
+                                                        det_results,gt_boxes,chosen_ids,
+                                                        max_difficulty=max_difficulty)
         #print 'MAPish {}'.format(ap[ap.nonzero()].mean())
-        print 'MAPish {}'.format(m_ap)
+        print 'MAPish {}     {}'.format(m_ap, model_name)
+

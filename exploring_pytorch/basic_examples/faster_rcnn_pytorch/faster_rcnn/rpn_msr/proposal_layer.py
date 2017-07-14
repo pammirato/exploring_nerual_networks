@@ -27,7 +27,7 @@ transformations to a set of regular boxes (called "anchors").
 
 
 def proposal_layer(rpn_cls_prob_reshape, rpn_bbox_pred, im_info, cfg_key, _feat_stride=[16, ],
-                   anchor_scales=[8, 16, 32]):
+                   anchor_scales=[8, 16, 32],return_scores=False):
     """
     Parameters
     ----------
@@ -165,7 +165,10 @@ def proposal_layer(rpn_cls_prob_reshape, rpn_bbox_pred, im_info, cfg_key, _feat_
     # batch inds are 0
     batch_inds = np.zeros((proposals.shape[0], 1), dtype=np.float32)
     blob = np.hstack((batch_inds, proposals.astype(np.float32, copy=False)))
-    return blob
+    if return_scores:
+        return blob,scores
+    else:
+        return blob
     # top[0].reshape(*(blob.shape))
     # top[0].data[...] = blob
 

@@ -38,6 +38,7 @@ from faster_rcnn.faster_rcnn import FasterRCNN
 from faster_rcnn import network
 from faster_rcnn.fast_rcnn.bbox_transform import bbox_transform_inv, clip_boxes
 from faster_rcnn.fast_rcnn.nms_wrapper import nms
+#from faster_rcnn.faster_rcnn_target_driven_archA import FasterRCNN as FasterRCNN_targetDriven
 from faster_rcnn.faster_rcnn_target_driven import FasterRCNN as FasterRCNN_targetDriven
 
 
@@ -442,7 +443,9 @@ class DetectionVisualizer(object):
         if self.targetVar.get() == 'Pick a target':
             tkMessageBox.showinfo('message', 'Pick a target image!')
             return
-            
+           
+        #pdb.set_trace()
+ 
         target_data = cv2.imread(os.path.join(self.targets_path,self.targetVar.get()))
         target_data = np.expand_dims(target_data,axis=0)
  
@@ -526,7 +529,7 @@ class DetectionVisualizer(object):
 
 
     def draw_boxes_on_image(self,boxes_by_class):
-        display_thresh = .3
+        display_thresh = .05
         for cid,class_boxes in enumerate(boxes_by_class):
             for box in class_boxes:
                 if box[4] < display_thresh:
@@ -566,8 +569,8 @@ class DetectionVisualizer(object):
 #USER INPUT
 data_path = '/playpen/ammirato/Data/HalvedRohitData/'
 scene_list=[
-             'Home_003_1',
-             #'Home_003_2',
+             #'Home_003_1',
+             'Home_003_2',
              #'Office_001_1'
              ]
 
@@ -575,7 +578,8 @@ scene_list=[
 dataset = GetDataSet.get_fasterRCNN_AVD(data_path,
                                         scene_list,
                                         preload=False,
-                                        chosen_ids=range(0,28))#[0,1,2,3,4,5])
+                                        chosen_ids=range(0,28),
+                                        fraction_of_no_box=1)
 dataloader = torch.utils.data.DataLoader(dataset,
                                          batch_size=1,
                                          shuffle=True,
@@ -584,7 +588,7 @@ dataloader = torch.utils.data.DataLoader(dataset,
 to_orig_img_trans = GetDataSet.get_fasterRCNN_AVD_to_orig_image_trans()
 bgr_rgb_trans = AVD_transforms.BGRToRGB()
 
-targets_path = '/playpen/ammirato/Data/big_bird_crops_160/'
+targets_path = '/playpen/ammirato/Data/big_bird_crops_16/'
 
 #create GUI
 window =  DetectionVisualizer(dataloader,to_orig_img_trans, 

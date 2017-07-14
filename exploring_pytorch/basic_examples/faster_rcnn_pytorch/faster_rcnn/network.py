@@ -70,16 +70,17 @@ def load_pretrained_npy(faster_rcnn_model, fname):
         val.copy_(param)
 
     # fc6 fc7
-    frcnn_dict = faster_rcnn_model.state_dict()
-    pairs = {'fc6.fc': 'fc6', 'fc7.fc': 'fc7'}
-    for k, v in pairs.items():
-        key = '{}.weight'.format(k)
-        param = torch.from_numpy(params[v]['weights']).permute(1, 0)
-        frcnn_dict[key].copy_(param)
-
-        key = '{}.bias'.format(k)
-        param = torch.from_numpy(params[v]['biases'])
-        frcnn_dict[key].copy_(param)
+#PHIL
+#    frcnn_dict = faster_rcnn_model.state_dict()
+#    pairs = {'fc6.fc': 'fc6', 'fc7.fc': 'fc7'}
+#    for k, v in pairs.items():
+#        key = '{}.weight'.format(k)
+#        param = torch.from_numpy(params[v]['weights']).permute(1, 0)
+#        frcnn_dict[key].copy_(param)
+#
+#        key = '{}.bias'.format(k)
+#        param = torch.from_numpy(params[v]['biases'])
+#        frcnn_dict[key].copy_(param)
 
 
 def np_to_variable(x, is_cuda=True, dtype=torch.FloatTensor):

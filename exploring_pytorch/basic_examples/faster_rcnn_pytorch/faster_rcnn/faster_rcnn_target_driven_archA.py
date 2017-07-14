@@ -131,10 +131,10 @@ class RPN(nn.Module):
         fg_cnt = torch.sum(rpn_label.data.ne(0))
 
         #weight = [torch.FloatTensor([0]), torch.FloatTensor([10])]
-        #weight = torch.FloatTensor([0,10])
-        #weight = weight.cuda()
-        #rpn_cross_entropy = F.cross_entropy(rpn_cls_score, rpn_label, weight=weight)
-        rpn_cross_entropy = F.cross_entropy(rpn_cls_score, rpn_label)
+        weight = torch.FloatTensor([1,5])
+        weight = weight.cuda()
+        rpn_cross_entropy = F.cross_entropy(rpn_cls_score, rpn_label, weight=weight)
+        #rpn_cross_entropy = F.cross_entropy(rpn_cls_score, rpn_label)
 
         # box loss
         rpn_bbox_targets, rpn_bbox_inside_weights, rpn_bbox_outside_weights = rpn_data[1:]
@@ -310,7 +310,7 @@ class FasterRCNN(nn.Module):
         ce_weights = torch.ones(cls_score.size()[1])
         ce_weights[0] = float(fg_cnt) / bg_cnt
         if fg_cnt == 0:
-            ce_weights[0] = 1
+            ce_weights[0] = .01
         ce_weights = ce_weights.cuda()
         cross_entropy = F.cross_entropy(cls_score, label, weight=ce_weights)
 
