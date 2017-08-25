@@ -53,14 +53,14 @@ pretrained_model = '/playpen/ammirato/Data/Detections/pretrained_models/VGG_imag
 #output_dir = 'models/saved_model3'
 output_dir = ('/playpen/ammirato/Data/Detections/' + 
              '/saved_models/')
-save_name_base = 'FRA_TD_1-5_archB_2'
-save_freq = 10 
+save_name_base = 'FRA_TD_1-5_archE_2'
+save_freq = 1 
 
 trained_model_path = ('/playpen/ammirato/Data/Detections/' +
                      '/saved_models/')
-trained_model_name = 'FRA_TD_1-5_archB_1_59_2.30055.h5'
-load_trained_model = False 
-trained_epoch =59
+trained_model_name = 'FRA_TD_1-5_archE_2_6.h5'
+load_trained_model = True 
+trained_epoch  = 0
 
 start_step = 0
 end_step = 100000
@@ -74,6 +74,9 @@ use_tensorboard = False
 remove_all_log = False   # remove all historical experiments in TensorBoard
 exp_name = None # the previous experiment name in TensorBoard
 
+
+use_not_present_target = .4
+
 # ------------
 
 if rand_seed is not None:
@@ -81,7 +84,7 @@ if rand_seed is not None:
 
 # load config
 cfg_from_file(cfg_file)
-lr = cfg.TRAIN.LEARNING_RATE
+lr = cfg.TRAIN.LEARNING_RATE 
 momentum = cfg.TRAIN.MOMENTUM
 weight_decay = cfg.TRAIN.WEIGHT_DECAY
 disp_interval =10# cfg.TRAIN.DISPLAY
@@ -135,17 +138,43 @@ trainloader = torch.utils.data.DataLoader(train_set,
                                           shuffle=True,
                                           collate_fn=AVD.collate)
 
+
+
+id_to_name = GetDataSet.get_class_id_to_name_dict(data_path)
+count_by_class = train_set.get_count_by_class()
+all_class_counts = np.array([count_by_class[x] for x in count_by_class.keys()])
+class_probs = all_class_counts / float(sum(all_class_counts))
+use_not_present_target_coef = len(count_by_class.keys()) * use_not_present_target
+
+#compute class weights
+total = float(sum(all_class_counts))
+class_weights = {} 
+max_weight = 0 
+for cid in count_by_class.keys():
+    if count_by_class[cid] > 0:
+        #TODO: make more robust. use class id, not index
+        wt =  total / count_by_class[cid]
+        class_weights[cid] = wt 
+        if wt > max_weight:
+            max_weight = wt
+
+for cid in class_weights.keys():
+    class_weights[cid] = class_weights[cid]/max_weight
+
+
+
 #load all target images
-target_path = '/playpen/ammirato/Data/big_bird_crops_16'
+target_path = '/playpen/ammirato/Data/big_bird_crops_80'
 image_names = os.listdir(target_path)
 image_names.sort()
-target_images = []
+#target_images = []
+target_images ={} 
 means = np.array([[[102.9801, 115.9465, 122.7717]]])
 for name in image_names:
     target_data = cv2.imread(os.path.join(target_path,name))
     target_data = target_data - means
     target_data = np.expand_dims(target_data,axis=0)
-    target_images.append(target_data)
+    target_images[name[:-7]] = target_data
 
 
 #imdb = get_imdb(imdb_name)
@@ -178,6 +207,7 @@ net.train()
 params = list(net.parameters())
 # optimizer = torch.optim.Adam(params[-8:], lr=lr)
 optimizer = torch.optim.SGD(params[8:], lr=lr, momentum=momentum, weight_decay=weight_decay)
+#optimizer = torch.optim.Adam(params[8:], lr=lr)
 
 if not os.path.exists(output_dir):
     os.mkdir(output_dir)
@@ -208,7 +238,10 @@ t.tic()
 for epoch in range(num_epochs):
     tv_cnt = 0
     ir_cnt = 0
-    targets_cnt = np.zeros((2,5))
+    targets_cnt = {} 
+    epoch_loss = 0
+    for cid in id_to_name.keys():
+        targets_cnt[cid] = [0,0]
     for step,batch in enumerate(trainloader):
 
         # get one batch
@@ -221,25 +254,44 @@ for epoch in range(num_epochs):
         #get the gt inds that are in this image, not counting 0(background)
         objects_present = gt_boxes[:,4]
         objects_present = objects_present[np.where(objects_present!=0)[0]]
-        not_present = np.asarray([ind for ind in chosen_ids 
-                                          if ind not in objects_present and 
-                                             ind != 0]) 
+
+        thresh = use_not_present_target
+        #if objects_present.shape[0] > 0:
+        #    counts = np.array([count_by_class[x] for x in objects_present])
+        #    present_probs = counts / float(sum(all_class_counts))
+        #    thresh = min(thresh, use_not_present_target_coef*min(present_probs))
 
         #pick a random target, with a bias towards choosing a target that 
         #is in the image. Also pick just one gt_box, since there is one target
-        if np.random.rand() < .3 and objects_present.shape[0]!=0:
+        if np.random.rand() > thresh and objects_present.shape[0]!=0:
+
+            #heuristic to balance classes, bias towards picking
+            #classes with less examples
+            #if objects_present.shape[0] > 1:
+            #    counts = np.array([count_by_class[x] for x in objects_present])
+            #    counts = counts - .6 * min(counts)
+            #    probs = 1 -  (counts/float(sum(counts)))
+            #    probs = probs / sum(probs)
+            #else:
+            #    probs = [1]
+            #target_ind = int(np.random.choice(objects_present, p=probs))
+            
             target_ind = int(np.random.choice(objects_present))
             gt_boxes = gt_boxes[np.where(gt_boxes[:,4]==target_ind)[0],:-1]
             gt_boxes[0,4] = 1
 
             tv_cnt += 1
-            targets_cnt[0,target_ind-1] += 1 
+            targets_cnt[target_ind][0] += 1 
         else:#the target is not in the image, give a dummy background box
+            not_present = np.asarray([ind for ind in chosen_ids 
+                                          if ind not in objects_present and 
+                                             ind != 0]) 
             target_ind = int(np.random.choice(not_present))
             gt_boxes = np.asarray([[0,0,1,1,0]])
 
-        target_data = target_images[target_ind-1]
-        targets_cnt[1,target_ind-1] += 1 
+        #target_data = target_images[target_ind-1]
+        target_data = target_images[id_to_name[target_ind]]
+        targets_cnt[target_ind][1] += 1 
 
 
         im_info = np.zeros((1,3))
@@ -251,7 +303,7 @@ for epoch in range(num_epochs):
         ir_cnt +=1
         net(target_data,im_data, im_info, gt_boxes, gt_ishard, dontcare_areas)
         loss = net.loss + net.rpn.loss
-
+        loss *= class_weights[target_ind]
         #if _DEBUG:
             #tp += float(net.tp)
             #tf += float(net.tf)
@@ -260,6 +312,7 @@ for epoch in range(num_epochs):
 
         train_loss += loss.data[0]
         step_cnt += 1
+        epoch_loss += loss.data[0]
 
         # backward
         optimizer.zero_grad()
@@ -276,16 +329,21 @@ for epoch in range(num_epochs):
             #log_text = 'step %d, loss: %.4f, fps: %.2f (%.2fs per batch) tv_cnt:%d' \
             #           'ir_cnt:%d epoch:%d' % (
             #    step,  train_loss / step_cnt, fps, 1./fps, tv_cnt, ir_cnt, epoch)
-            log_text = 'step %d, avg_loss: %.4f, fps: %.2f (%.2fs per batch) tv_cnt:%d' \
-                       'ir_cnt:%d epoch:%d loss: %.4f' % (
-                step,  train_loss/step_cnt, fps, 1./fps, tv_cnt, ir_cnt, epoch, loss.data[0])
+            log_text = 'step %d,epoc_avg_loss: %.4f, fps: %.2f (%.2fs per batch) tv_cnt:%d' \
+                       'ir_cnt:%d epoch:%d loss: %.4f tot_avg_loss: %.4f' % (
+                step,  epoch_loss/(step+1), fps, 1./fps, tv_cnt, ir_cnt, epoch, loss.data[0],
+                train_loss/step_cnt)
             log_print(log_text, color='green', attrs=['bold'])
-            print(targets_cnt)
+            if step%(disp_interval*10) == 0:
+                for cid in targets_cnt.keys():
+                    print '{}: {} / {}'.format(cid,targets_cnt[cid][0],targets_cnt[cid][1])
 
             if _DEBUG:
                 log_print('\tTP: %.2f%%, TF: %.2f%%, fg/bg=(%d/%d)' % (tp/fg*100., tf/bg*100., fg/step_cnt, bg/step_cnt))
-                log_print('\trpn_cls: %.4f, rpn_box: %.4f, rcnn_cls: %.4f, rcnn_box: %.4f' % (
-                    net.rpn.cross_entropy.data.cpu().numpy()[0], net.rpn.loss_box.data.cpu().numpy()[0],
+                log_print('\trpn_cls: %.4f, rpn_box: %.4f, rpn_feat: %.4f, rcnn_cls: %.4f, rcnn_box: %.4f' % (
+                    net.rpn.cross_entropy.data.cpu().numpy()[0], 
+                    net.rpn.loss_box.data.cpu().numpy()[0],
+                    net.rpn.feature_extraction_loss.data.cpu().numpy()[0],
                     net.cross_entropy.data.cpu().numpy()[0], net.loss_box.data.cpu().numpy()[0])
                 )
             re_cnt = True
@@ -308,7 +366,7 @@ for epoch in range(num_epochs):
             save_name = os.path.join(output_dir, save_name_base+'_{}.h5'.format(
                                                   epoch+trained_epoch+1))
         else:
-            save_name = os.path.join(output_dir, save_name_base+'_{}_{:1.5f}.h5'.format(epoch, train_loss/step_cnt))
+            save_name = os.path.join(output_dir, save_name_base+'_{}_{:1.5f}.h5'.format(epoch, epoch_loss/(step+1)))
         network.save_net(save_name, net)
         print('save model: {}'.format(save_name))
 

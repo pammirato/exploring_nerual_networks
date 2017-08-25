@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 
 
-desired_size = 16
+desired_size = 80 
 base_path = '/playpen/ammirato/Data/big_bird_crops'
 image_names = os.listdir(base_path)
 

@@ -33,62 +33,55 @@ trained_model_names = ['fasterRCNN_avd.h5']
 
 
 trained_model_names=[#'faster_rcnn_avd_split2_target_driven_fc7+_concat_vgg_feat_concat_train7_19',
-                    #'FRA_TD_1-5_archA_4_10',
-                    #'FRA_TD_1-5_archA_5_0',
-                    #'FRA_TD_1-5_archA_5_1',
-                    #'FRA_TD_1-5_archA_5_2',
-                    #'FRA_TD_1-5_archA_5_3',
-                    #'FRA_TD_1-5_archA_5_4',
-                    #'FRA_TD_1-5_archA_5_5',
-                    #'FRA_TD_1-5_archA_5_6',
-                    #'FRA_TD_1-5_archA_5_7',
-                    #'FRA_TD_1-5_archA_5_8',
-                    #'FRA_TD_1-5_archA_5_9',
-                    #'FRA_TD_1-5_archA_5_10',
-                    #'FRA_TD_1-5_archA_5_11',
-                    #'FRA_TD_1-5_archA_5_12',
-                    #'FRA_TD_1-5_archA_5_13',
-                    #'FRA_TD_1-5_archA_5_14',
-                    #'FRA_TD_1-5_archA_5_15',
-                    #'FRA_TD_1-5_archA_5_18',
-                    #'FRA_TD_1-5_archA_5_21',
-                    #'FRA_TD_1-5_archA_5_24',
-                    #'FRA_TD_1-5_archA_5_27',
-                    #'FRA_TD_1-5_archB_1_0',
-                    #'FRA_TD_1-5_archB_1_3',
-                    #'FRA_TD_1-5_archB_1_6',
-                    #'FRA_TD_1-5_archB_1_9',
-                    #'FRA_TD_1-5_archB_1_12',
-                    #'FRA_TD_1-5_archB_1_15',
-                    #'FRA_TD_1-5_archB_1_18',
-                    #'FRA_TD_1-5_archB_1_21',
-                    #'FRA_TD_1-5_archB_1_24',
-                    #'FRA_TD_1-5_archB_1_27',
-                    #'FRA_TD_1-5_archB_1_30',
-                    #'FRA_TD_1-5_archB_1_33',
-                    #'FRA_TD_1-5_archB_1_36',
-                    #'FRA_TD_1-5_archB_1_39',
-                    #'FRA_TD_1-5_archB_1_42',
-                    #'FRA_TD_1-5_archB_1_45',
-                    #'FRA_TD_1-5_archB_1_48',
-                    #'FRA_TD_1-5_archB_1_51',
-                    #'FRA_TD_1-5_archB_1_54',
-                    #'FRA_TD_1-5_archB_1_57',
-                    'FRA_TD_1-5_archB_1_70',
-                    #'FRA_TD_1-5_archB_1_65',
-                    #'FRA_TD_1-5_archB_1_60',
-                    #'FRA_TD_1-5_archA_5_33',
-                    #'FRA_TD_1-5_archA_5_36',
-                    #'FRA_TD_1-5_archA_5_39',
-                    #'FRA_TD_1-5_archA_5_42',
-                    #'FRA_TD_1-5_archA_5_16',
-                    #'FRA_TD_1-5_archA_5_17',
-                    #'FRA_TD_1-5_archB_30',
-                    #'FRA_TD_1-5_archB_10',
-                    #'FRA_TD_1-5_archB_20',
-                    #'FRA_TD_1-5_archB_25',
-                    #'FRA_TD_1-5_archB_15',
-                    #'FRA_TD_1-5_archB_5',
+                    #'FRA_TD_1-28_archB1_0_100',
+                    #'FRA_TD_1-5_archB1_0_60',
+                    #'FRA_TD_1-5_archC_0_0',
+                    #'FRA_TD_1-5_archC_1_54',
+                    #'FRA_TD_1-5_archE_0_0',
+                    #'FRA_TD_1-5_archE_0_2',
+                    #'FRA_TD_1-5_archE_0_4',
+                    'FRA_TD_1-5_archE_2_6',
+                    #'FRA_TD_1-5_archE_0_8',
+                    #'FRA_TD_1-5_archE_0_10',
+                    #'FRA_TD_1-5_archE_0_12',
+                    #'FRA_TD_1-5_archE_0_14',
+                    #'FRA_TD_1-5_archE_0_16',
+                    #'FRA_TD_1-5_archE_0_18',
+                    #'FRA_TD_1-5_archE_0_20',
+                    #'FRA_TD_1-5_archD_0_22',
+                    #'FRA_TD_1-5_archD_0_24',
+                    #'FRA_TD_1-5_archD_0_26',
+                    #'FRA_TD_1-5_archD_0_28',
+                    #'FRA_TD_1-5_archD_0_30',
+                    #'FRA_TD_1-5_archD_0_32',
+                    #'FRA_TD_1-5_archD_0_34',
+                    #'FRA_TD_1-5_archD_0_36',
+                    #'FRA_TD_1-5_archD_0_38',
+                    #'FRA_TD_1-5_archD_0_40',
+                    #'FRA_TD_1-5_archD_0_42',
+                    #'FRA_TD_1-5_archD_0_44',
+                    #'FRA_TD_1-5_archD_0_46',
+                    #'FRA_TD_1-5_archD_0_48',
+                    #'FRA_TD_1-5_archD_0_50',
+                    #'FRA_TD_1-5_archD_0_52',
+                    #'FRA_TD_1-5_archD_0_54',
+                    #'FRA_TD_1-5_archD_0_56',
+                    #'FRA_TD_1-5_archD_0_58',
+                    #'FRA_TD_1-5_archD_0_60',
+                    #'FRA_TD_1-5_archD_0_62',
+                    #'FRA_TD_1-5_archD_0_64',
+                    #'FRA_TD_1-5_archD_0_66',
+                    #'FRA_TD_1-5_archD_0_68',
+                    #'FRA_TD_1-5_archD_0_70',
+                    #'FRA_TD_1-5_archD_0_72',
+                    #'FRA_TD_1-5_archD_0_74',
+                    #'FRA_TD_1-5_archD_0_76',
+                    #'FRA_TD_1-5_archD_0_78',
+                    #'FRA_TD_1-5_archD_0_80',
+                    #'FRA_TD_1-5_archD_0_82',
+                    #'FRA_TD_1-5_archD_0_84',
+                    #'FRA_TD_1-5_archD_0_86',
+                    #'FRA_TD_1-5_archD_0_88',
                     ]
 rand_seed = 1024
 
@@ -97,17 +90,42 @@ max_per_image = 1
 thresh = 0.05
 vis = False 
 
+##load all target images
+#target_path = '/playpen/ammirato/Data/big_bird_crops_160'
+#image_names = os.listdir(target_path)
+#image_names.sort()
+#target_images = []
+#for il, name in enumerate(image_names):
+#    #if il >4:
+#    #    continue
+#    target_data = cv2.imread(os.path.join(target_path,name))
+#    target_data = np.expand_dims(target_data,axis=0)
+#    target_images.append(target_data)
+
+
+
+
+
+data_path = '/playpen/ammirato/Data/HalvedRohitData/'
+id_to_name = GetDataSet.get_class_id_to_name_dict(data_path)
+name_to_id = {}
+for cid in id_to_name.keys():
+    name_to_id[id_to_name[cid]] = cid 
+
 #load all target images
-target_path = '/playpen/ammirato/Data/big_bird_crops_16'
+target_path = '/playpen/ammirato/Data/big_bird_crops_80'
 image_names = os.listdir(target_path)
 image_names.sort()
-target_images = []
-for il, name in enumerate(image_names):
-    #if il >4:
-    #    continue
+#target_images = []
+target_images ={} 
+means = np.array([[[102.9801, 115.9465, 122.7717]]])
+for name in image_names:
     target_data = cv2.imread(os.path.join(target_path,name))
+    target_data = target_data - means
     target_data = np.expand_dims(target_data,axis=0)
-    target_images.append(target_data)
+    target_images[name[:-7]] = target_data
+
+
 
 
 
@@ -205,20 +223,24 @@ def test_net(name, net, dataloader, max_per_image=300, thresh=0.05, vis=False,
         if batch[1][1] == '000320009230101.jpg':
             breakp = 1
 
-        im = im_data.squeeze()
-        im = im.copy()
-        means = np.array([[[102.9801, 115.9465, 122.7717]]])
-        im -= means
-        im = im.astype(np.uint8)
+        #im = im_data.squeeze()
+        #im = im.copy()
+        #means = np.array([[[102.9801, 115.9465, 122.7717]]])
+        #im -= means
+        #im = im.astype(np.uint8)
  
-        _t['im_detect'].tic()
 
         all_image_dets = np.zeros((0,6)) 
-        for j,target_data in enumerate(target_images):
+        #for j,target_data in enumerate(target_images):
+        for j,target_name in enumerate(dataloader.dataset.get_class_names()):
         #scores, boxes = im_detect(net, im)
-            scores, boxes = im_detect(net, target_data, im_data, im_info)
-        
+            if target_name == 'background':
+                continue
+            target_data = target_images[target_name]
+            j = int(name_to_id[target_name]-1)
 
+            _t['im_detect'].tic()
+            scores, boxes = im_detect(net, target_data, im_data, im_info)
             detect_time = _t['im_detect'].toc(average=False)
 
             _t['misc'].tic()
@@ -236,6 +258,8 @@ def test_net(name, net, dataloader, max_per_image=300, thresh=0.05, vis=False,
             keep = nms(cls_dets, cfg.TEST.NMS)
             cls_dets = cls_dets[keep, :]
 
+            if len(inds) > 0:
+                breakp =1 
                     
             if vis:
                 #im2show = vis_detections(im2show, imdb.classes[j], cls_dets)
@@ -299,18 +323,18 @@ if __name__ == '__main__':
     data_path = '/playpen/ammirato/Data/HalvedRohitData/'
     scene_list=[
              'Home_003_1',
-             'Home_003_2',
+             #'Home_003_2',
              #'test',
-             'Office_001_1'
+             #'Office_001_1'
              ]
 
     #CREATE TRAIN/TEST splits
     dataset = GetDataSet.get_fasterRCNN_AVD(data_path,
                                             scene_list,
                                             preload=False,
-                                            chosen_ids=[1,2,3,4,5,6], 
+                                            chosen_ids=range(6),#[1,2,3,4,5,6], 
                                             by_box=False,
-                                            fraction_of_no_box=1)
+                                            fraction_of_no_box=.01)
 
     #create train/test loaders, with CUSTOM COLLATE function
     dataloader = torch.utils.data.DataLoader(dataset,

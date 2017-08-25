@@ -28,28 +28,11 @@ cfg_file = 'experiments/cfgs/faster_rcnn_end2end.yml'
 #trained_model = 'models/saved_model3/faster_rcnn_90000.h5'
 #trained_model = '/playpen/ammirato/Documents/exploring_neural_networks/exploring_pytorch/saved_models/fasterRCNN_avd.h5'
 trained_model_path = ('/playpen/ammirato/Data/Detections/' + 
-                     'saved_models/')
+                     'saved_models/recorded_detection_models/')
 trained_model_names = ['fasterRCNN_avd.h5']
 trained_model_names = [#'faster_rcnn_avd_split2_instances1-5_0',
-                       #'faster_rcnn_avd_split2_instances1-5_1',
-                       #'faster_rcnn_avd_split2_instances1-5_2',
-                       #'faster_rcnn_avd_split2_instances1-5_3',
-                       #'faster_rcnn_avd_split2_instances1-5_8',
-                       #'faster_rcnn_avd_split2_instances1-5_19',
                        'FRA_1-28_18',
-                       #'faster_rcnn_avd_split2_7',
-                       #'faster_rcnn_avd_split2_8',
-                       #'faster_rcnn_avd_split2_9',
-                       #'faster_rcnn_avd_split2_10',
-                       #'faster_rcnn_avd_split2_11',
-                       #'faster_rcnn_avd_split2_12',
-                       #'faster_rcnn_avd_split2_13',
-                       #'faster_rcnn_avd_split2_14',
-                       #'faster_rcnn_avd_split2_15',
-                       #'faster_rcnn_avd_split2_16',
-                       #'faster_rcnn_avd_split2_17',
-                       #'faster_rcnn_avd_split2_18',
-                       #'faster_rcnn_avd_split2_19',
+                       #'FRA_1-5_19',
                       ]
 rand_seed = 1024
 
@@ -132,7 +115,7 @@ def test_net(name, net, dataloader, max_per_image=300, thresh=0.05, vis=False,
     
     if output_dir is not None:
         #det_file = os.path.join(output_dir, 'detections.pkl')
-        det_file = os.path.join(output_dir, name+'.json')
+        det_file = os.path.join(output_dir, name+'_train.json')
         print det_file
 
     #for i in range(num_images):
@@ -248,17 +231,19 @@ if __name__ == '__main__':
 #    imdb.competition_mode(on=True)
     data_path = '/playpen/ammirato/Data/HalvedRohitData/'
     scene_list=[
-             'Home_003_1',
-             'Home_003_2',
+             #'Home_003_1',
+             'Home_002_1',
+             #'Home_003_2',
              #'test',
-             'Office_001_1'
+             #'Office_001_1'
              ]
 
     #CREATE TRAIN/TEST splits
     dataset = GetDataSet.get_fasterRCNN_AVD(data_path,
                                             scene_list,
                                             preload=False,
-                                            chosen_ids=range(28))
+                                            chosen_ids=range(28),
+                                            fraction_of_no_box=1)
 
     #create train/test loaders, with CUSTOM COLLATE function
     dataloader = torch.utils.data.DataLoader(dataset,
@@ -266,6 +251,8 @@ if __name__ == '__main__':
                                               shuffle=True,
                                               collate_fn=AVD.collate)
 
+
+    print 'Dont forget to change chosen object ids to fit model!'
 
 
     #test multiple trained nets

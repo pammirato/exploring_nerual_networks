@@ -28,19 +28,13 @@ cfg_file = 'experiments/cfgs/faster_rcnn_end2end.yml'
 #trained_model = 'models/saved_model3/faster_rcnn_90000.h5'
 #trained_model = '/playpen/ammirato/Documents/exploring_neural_networks/exploring_pytorch/saved_models/fasterRCNN_avd.h5'
 trained_model_path = ('/playpen/ammirato/Data/Detections/' + 
-                     'saved_models/')
+                     'saved_models/recorded_detection_models/')
 trained_model_names = ['fasterRCNN_avd.h5']
 
 
 trained_model_names=[#'faster_rcnn_avd_split2_target_driven_fc7+_concat_vgg_feat_concat_train7_19',
-                    'FRA_TD_1-5_archA_5_30',
-                    'FRA_TD_1-5_archA_5_39',
-                    #'FRA_TD_1-5_archB_30',
-                    #'FRA_TD_1-5_archB_10',
-                    #'FRA_TD_1-5_archB_20',
-                    #'FRA_TD_1-5_archB_25',
-                    #'FRA_TD_1-5_archB_15',
-                    #'FRA_TD_1-5_archB_5',
+                    #'FRA_TD_1-5_archA_5_39',
+                    'FRA_TD_1-5_archA_33',
                     ]
 rand_seed = 1024
 
@@ -62,7 +56,10 @@ target_images = []
 #    target_images.append(target_data)
 
 means = np.array([[[102.9801, 115.9465, 122.7717]]])
-for name in image_names:
+#for name in image_names:
+for il, name in enumerate(image_names):
+    if il >4:
+        continue
     target_data = cv2.imread(os.path.join(target_path,name))
     target_data = target_data - means
     target_data = np.expand_dims(target_data,axis=0)
@@ -166,14 +163,12 @@ def test_net(name, net, dataloader, max_per_image=300, thresh=0.05, vis=False,
         im -= means
         im = im.astype(np.uint8)
  
-        _t['im_detect'].tic()
 
         all_image_dets = np.zeros((0,6)) 
         for j,target_data in enumerate(target_images):
         #scores, boxes = im_detect(net, im)
+            _t['im_detect'].tic()
             scores, boxes = im_detect(net, target_data, im_data, im_info)
-        
-
             detect_time = _t['im_detect'].toc(average=False)
 
             _t['misc'].tic()
@@ -274,6 +269,8 @@ if __name__ == '__main__':
                                               collate_fn=AVD.collate)
 
 
+
+    print 'DEBUG!!! MAY NOT BE CORRECT TARGET IMAGE/ID RECORDED'
 
     #test multiple trained nets
     for model_name in trained_model_names:

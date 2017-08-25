@@ -214,7 +214,6 @@ def anchor_target_layer(rpn_cls_score, gt_boxes, gt_ishard, dontcare_areas, im_i
     if gt_boxes.shape[0] == 0:
         bbox_targets = np.zeros((len(inds_inside), 4), dtype=np.float32)
     else:
-
         # bbox_targets = np.zeros((len(inds_inside), 4), dtype=np.float32)
         bbox_targets = _compute_targets(anchors, gt_boxes[argmax_overlaps, :])
 

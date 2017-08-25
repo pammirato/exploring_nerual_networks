@@ -27,7 +27,7 @@ transformations to a set of regular boxes (called "anchors").
 
 
 def proposal_layer(rpn_cls_prob_reshape, rpn_bbox_pred, im_info, cfg_key, _feat_stride=[16, ],
-                   anchor_scales=[8, 16, 32],return_scores=False):
+                   anchor_scales=[8, 16, 32],return_scores=False, return_anchor_inds=False):
     """
     Parameters
     ----------
@@ -132,6 +132,7 @@ def proposal_layer(rpn_cls_prob_reshape, rpn_bbox_pred, im_info, cfg_key, _feat_
 
     # 2. clip predicted boxes to image
     proposals = clip_boxes(proposals, im_info[:2])
+    #orig_props = proposals
 
     # 3. remove predicted boxes with either height or width < threshold
     # (NOTE: convert min_size to input image scale stored in im_info[2])
@@ -151,6 +152,7 @@ def proposal_layer(rpn_cls_prob_reshape, rpn_bbox_pred, im_info, cfg_key, _feat_
         order = order[:pre_nms_topN]
     proposals = proposals[order, :]
     scores = scores[order]
+    anchor_inds = keep[order]
 
     # 6. apply nms (e.g. threshold = 0.7)
     # 7. take after_nms_topN (e.g. 300)
@@ -158,14 +160,26 @@ def proposal_layer(rpn_cls_prob_reshape, rpn_bbox_pred, im_info, cfg_key, _feat_
     keep = nms(np.hstack((proposals, scores)), nms_thresh)
     if post_nms_topN > 0:
         keep = keep[:post_nms_topN]
+
     proposals = proposals[keep, :]
     scores = scores[keep]
+    anchor_inds = anchor_inds[keep]
+
+    assert(anchor_inds.shape[0] == scores.shape[0])
+
+    if proposals.shape[0] == 0:
+        print 'NOOOOOOOOOOOOOOOOOOOO'
+        proposals = np.zeros((1,4))
+        scores = np.zeros((1,1))
+        anchor_inds = np.zeros(1)
     # Output rois blob
     # Our RPN implementation only supports a single input image, so all
     # batch inds are 0
     batch_inds = np.zeros((proposals.shape[0], 1), dtype=np.float32)
     blob = np.hstack((batch_inds, proposals.astype(np.float32, copy=False)))
-    if return_scores:
+    if return_scores and return_anchor_inds:
+        return blob, scores, anchor_inds
+    elif return_scores:
         return blob,scores
     else:
         return blob

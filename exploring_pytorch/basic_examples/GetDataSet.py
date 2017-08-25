@@ -291,3 +291,78 @@ def get_fasterRCNN_AVD_to_orig_image_trans():
 
 
 
+def get_part_classifier_AVD(root, scene_list,
+                       preload=False,
+                       max_difficulty=4,
+                       chosen_ids=None,
+                       by_box=False,
+                       fraction_of_no_box=.1,
+                       org_img_dims=[1920/2,1080/2,3],
+                       add_background=True,
+                      ):
+    """
+    Returns a dataloader for the AVD dataset for use with training FasterRCNN.
+
+    dataset = get_fasterRCNN_AVD('/path/to/data', ['scene1','scene2,...])
+
+
+    ARGS:
+        root: path to data. Parent of all scene directories
+        scene_list: scenes to include
+        
+    KEYWORD ARGS:
+        preload(False): if images should all be loaded at initialization
+        max_difficulty(int=4): max bbox difficulty to use 
+    """
+    if chosen_ids is None:
+        chosen_ids = range(6)
+
+    back_trans = AVD_transforms.AddBackgroundBoxes(
+                                num_to_add=1,
+                                box_dimensions_range=[50,50,300,300],
+                                image_dimensions=org_img_dims)
+    
+    ##initialize transforms for the labels
+    #only consider boxes from the chosen classes
+    pick_trans = AVD_transforms.PickInstances(chosen_ids,
+                                              max_difficulty=max_difficulty)
+
+
+    if add_background:
+        #compose the transforms in a specific order, first to last
+        target_trans = AVD_transforms.Compose([
+                                               pick_trans,
+                                               back_trans,
+                                              ])
+    else:
+        target_trans = AVD_transforms.Compose([
+                                               pick_trans,
+                                              ])
+
+
+
+
+    to_tensor_trans = AVD_transforms.ToTensor()
+    ##image transforms
+    means = np.array([[[102.9801, 115.9465, 122.7717]]])
+    norm_trans = AVD_transforms.MeanSTDNormalize(mean=means)
+
+    #compose the image transforms in a specific order
+    image_trans = AVD_transforms.Compose([
+                                          norm_trans,
+                                          to_tensor_trans,
+                                         ])
+
+    id_to_name_dict = get_class_id_to_name_dict(root)
+
+    dataset = AVD.AVD(root=root,
+                         scene_list=scene_list,
+                         transform=image_trans,
+                         target_transform=target_trans,
+                         classification=False,
+                         preload_images=preload,
+                         by_box=by_box,
+                         class_id_to_name=id_to_name_dict,
+                         fraction_of_no_box=fraction_of_no_box)
+
+    return dataset

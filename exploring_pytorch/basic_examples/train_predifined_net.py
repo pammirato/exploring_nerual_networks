@@ -41,8 +41,8 @@ image_size = [224,224,3]
 #whether to use the GPU
 cuda = True 
 
-preload_images = True 
-reload_train_test = False 
+preload_images = False 
+reload_train_test = True
 
 load_model = True
 use_pretrained_alexnet = True

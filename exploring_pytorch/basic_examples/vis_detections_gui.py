@@ -38,8 +38,10 @@ from faster_rcnn.faster_rcnn import FasterRCNN
 from faster_rcnn import network
 from faster_rcnn.fast_rcnn.bbox_transform import bbox_transform_inv, clip_boxes
 from faster_rcnn.fast_rcnn.nms_wrapper import nms
-#from faster_rcnn.faster_rcnn_target_driven_archA import FasterRCNN as FasterRCNN_targetDriven
-from faster_rcnn.faster_rcnn_target_driven import FasterRCNN as FasterRCNN_targetDriven
+from faster_rcnn.faster_rcnn_target_driven_archA import FasterRCNN as FasterRCNN_targetDriven
+#from faster_rcnn.faster_rcnn_target_driven_archB import FasterRCNN as FasterRCNN_targetDriven
+#from faster_rcnn.faster_rcnn_target_driven_archB1 import FasterRCNN as FasterRCNN_targetDriven
+#from faster_rcnn.faster_rcnn_target_driven import FasterRCNN as FasterRCNN_targetDriven
 
 
 
@@ -322,8 +324,6 @@ class DetectionVisualizer(object):
                                                             pred_class,
                                                             pred_score))
 
-
-
                 #remove previous box if it exists
                 if not(self.rect is None):
                     self.rect.remove()
@@ -447,7 +447,10 @@ class DetectionVisualizer(object):
         #pdb.set_trace()
  
         target_data = cv2.imread(os.path.join(self.targets_path,self.targetVar.get()))
+        #means = np.array([[[102.9801, 115.9465, 122.7717]]])
+        #target_data = target_data - means
         target_data = np.expand_dims(target_data,axis=0)
+
  
         max_per_image = 1 
         thresh = 0.05
@@ -569,8 +572,8 @@ class DetectionVisualizer(object):
 #USER INPUT
 data_path = '/playpen/ammirato/Data/HalvedRohitData/'
 scene_list=[
-             #'Home_003_1',
-             'Home_003_2',
+             'Home_003_1',
+             #'Home_003_2',
              #'Office_001_1'
              ]
 
@@ -588,7 +591,7 @@ dataloader = torch.utils.data.DataLoader(dataset,
 to_orig_img_trans = GetDataSet.get_fasterRCNN_AVD_to_orig_image_trans()
 bgr_rgb_trans = AVD_transforms.BGRToRGB()
 
-targets_path = '/playpen/ammirato/Data/big_bird_crops_16/'
+targets_path = '/playpen/ammirato/Data/big_bird_crops_160/'
 
 #create GUI
 window =  DetectionVisualizer(dataloader,to_orig_img_trans, 
