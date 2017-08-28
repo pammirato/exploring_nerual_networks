@@ -1,7 +1,7 @@
 import os
 
 saved_models_path = '/playpen/ammirato/Data/Detections/saved_models/'
-base_name = 'PC_1-5_archC_2'
+base_name = 'FRA_TD_1-28_archA2_0'
 file_extension = '.h5'
 
 model_names = os.listdir(saved_models_path)

@@ -37,6 +37,14 @@ for name in bb_names:
             rows[-1] = rows.max()+40
             rows[0] = rmin
 
+        if name == 'expo_marker_red':
+            rmin = rows.min()
+            rows[-1] = rows.max()-100
+            rows[0:-1] = rmin
+            cmin = cols.min()
+            cols[-1] = cols.max()
+            cols[0:-1] = cmin+100
+
 
 
         crop = img1[rows.min()-ra:rows.max()+ra,
