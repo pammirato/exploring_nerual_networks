@@ -5,7 +5,7 @@ import numpy as np
 from datetime import datetime
 import cv2
 
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 
 from faster_rcnn import network
 #from faster_rcnn.faster_rcnn_target_driven import FasterRCNN, RPN
@@ -54,14 +54,14 @@ pretrained_model = '/playpen/ammirato/Data/Detections/pretrained_models/VGG_imag
 #output_dir = 'models/saved_model3'
 output_dir = ('/playpen/ammirato/Data/Detections/' + 
              '/saved_models/')
-save_name_base = 'PD_1-5_archA_0'
+save_name_base = 'PD_1-5_archA_6'
 save_freq = 1 
 
 trained_model_path = ('/playpen/ammirato/Data/Detections/' +
                      '/saved_models/')
-trained_model_name = 'PC_1-5_archC_1_8_21.58331.h5'
-load_trained_model = False
-trained_epoch = 8 
+trained_model_name = 'PD_1-5_archA_0_9_69.38499.h5'
+load_trained_model = False 
+trained_epoch = 9 
 
 start_step = 0
 end_step = 100000
@@ -166,7 +166,7 @@ for cid in class_weights.keys():
 
 
 #load all target images
-target_path = '/playpen/ammirato/Data/big_bird_crops_80'
+target_path = '/playpen/ammirato/Data/big_bird_patches_80'
 image_names = os.listdir(target_path)
 image_names.sort()
 target_images ={} 
@@ -175,7 +175,7 @@ for name in image_names:
     target_data = cv2.imread(os.path.join(target_path,name))
     target_data = target_data - means
     target_data = np.expand_dims(target_data,axis=0)
-    target_images[name[:-7]] = target_data
+    target_images[name[:-11]] = target_data
 
 
 
@@ -211,6 +211,9 @@ re_cnt = False
 t = Timer()
 t.tic()
 
+cur_el = 0
+prev_el = 0
+prev2_el = 0
 
 
 for epoch in range(num_epochs):
@@ -243,13 +246,60 @@ for epoch in range(num_epochs):
         objects_present = objects_present[np.where(objects_present!=0)[0]]
 
 
+
+
+
+
+        thresh = use_not_present_target
+
+        target_box = np.zeros(0) 
+        other_boxes = np.zeros(0) 
+
+        #pick a random target, with a bias towards choosing a target that 
+        #is in the image. Also pick just one gt_box, since there is one target
+        if np.random.rand() > thresh and objects_present.shape[0]!=0:
+
+            target_ind = int(np.random.choice(objects_present))
+
+            target_box_ind = np.where(gt_boxes[:,4]==target_ind)[0]
+            other_inds = np.where(gt_boxes[:,4] != target_ind)[0]
+            target_box =  gt_boxes[target_box_ind,:-1].squeeze()
+            other_boxes =  np.delete(gt_boxes,target_box_ind,axis=0)
+
+            #gt_boxes = gt_boxes[np.where(gt_boxes[:,4]==target_ind)[0],:-1]
+            #gt_boxes[0,4] = 1 
+
+            tv_cnt += 1
+            targets_cnt[target_ind][0] += 1 
+        else:#the target is not in the image, give a dummy background box
+            not_present = np.asarray([ind for ind in chosen_ids 
+                                          if ind not in objects_present and 
+                                             ind != 0]) 
+            target_ind = int(np.random.choice(not_present))
+            other_boxes = gt_boxes
+            #gt_boxes = np.asarray([[0,0,1,1,0]])
+
+        #target_data = target_images[target_ind-1]
+        target_data = target_images[id_to_name[target_ind]]
+        targets_cnt[target_ind][1] += 1 
+
+
+
+
+
+
+
+
+
+
+
         #choose a target object
-        target_ind = int(np.random.choice(objects_present))
-        target_box_ind = np.where(gt_boxes[:,4]==target_ind)[0]
-        other_inds = np.where(gt_boxes[:,4] != target_ind)[0]
-        #target_box =  gt_boxes[target_box_ind,:-1]
-        target_box =  gt_boxes[target_box_ind,:-1].squeeze()
-        other_boxes =  np.delete(gt_boxes,target_box_ind,axis=0)
+        #target_ind = int(np.random.choice(objects_present))
+        #target_box_ind = np.where(gt_boxes[:,4]==target_ind)[0]
+        #other_inds = np.where(gt_boxes[:,4] != target_ind)[0]
+        ##target_box =  gt_boxes[target_box_ind,:-1]
+        #target_box =  gt_boxes[target_box_ind,:-1].squeeze()
+        #other_boxes =  np.delete(gt_boxes,target_box_ind,axis=0)
 
         #get target anchor image
         target_data = target_images[id_to_name[target_ind]]
@@ -283,7 +333,7 @@ for epoch in range(num_epochs):
             log_text = 'step %d,epoc_avg_loss: %.4f, fps: %.2f (%.2fs per batch) ' \
                        'epoch:%d loss: %.4f tot_avg_loss: %.4f ce_loss: %.4f t_loss: %.4f' % (
                 step,  epoch_loss/(step+1), fps, 1./fps,  epoch, loss.data[0],
-                train_loss/step_cnt, net.cross_entropy.data[0], net.triplet_loss.data[0])
+                train_loss/step_cnt, net.cross_entropy.data[0], net.cross_entropy.data[0])
             log_print(log_text, color='green', attrs=['bold'])
             #if step%(disp_interval*10) == 0:
             #    for cid in targets_cnt.keys():
@@ -300,5 +350,11 @@ for epoch in range(num_epochs):
         network.save_net(save_name, net)
         print('save model: {}'.format(save_name))
 
+    prev2_el = prev_el
+    prev_el = cur_el
+    cur_el = epoch_loss/(step+1)
 
-
+    if prev2_el >0 and cur_el-prev_el >-.1 and prev_el-prev2_el >-.1:
+        lr = .5*lr
+        #optimizer = torch.optim.SGD(params[8:], lr=lr, momentum=momentum, weight_decay=weight_decay)
+        optimizer = torch.optim.Adam(params, lr=lr)

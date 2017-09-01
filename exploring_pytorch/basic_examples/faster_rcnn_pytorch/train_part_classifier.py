@@ -13,7 +13,7 @@ from faster_rcnn.part_classifier import Part_Classifier
 #from faster_rcnn.faster_rcnn_target_driven import FasterRCNN, RPN
 from faster_rcnn.utils.timer import Timer
 
-import faster_rcnn.roi_data_layer.roidb as rdl_roidb
+#import faster_rcnn.roi_data_layer.roidb as rdl_roidb
 from faster_rcnn.roi_data_layer.layer import RoIDataLayer
 from faster_rcnn.datasets.factory import get_imdb
 from faster_rcnn.fast_rcnn.config import cfg, cfg_from_file
@@ -60,7 +60,7 @@ save_freq = 1
 trained_model_path = ('/playpen/ammirato/Data/Detections/' +
                      '/saved_models/')
 trained_model_name = 'PC_1-5_archC_2_7_6.96283.h5'
-load_trained_model = True 
+load_trained_model = False 
 trained_epoch = 7 
 
 start_step = 0

@@ -39,13 +39,10 @@ class RPN(nn.Module):
         #first 5 conv layers of VGG? only resizing is 4 max pools
         self.features = VGG16(bn=False)
 
-        self.target_conv = Conv2d(512,512,5)
-        self.target_embedding = FC(512 +  512, 512);
 
-
-        self.conv1 = Conv2d(512, 512, 3, same_padding=True)
-        self.score_conv = Conv2d(512, len(self.anchor_scales) * 3 * 2, 1, relu=False, same_padding=False)
-        self.bbox_conv = Conv2d(512, len(self.anchor_scales) * 3 * 4, 1, relu=False, same_padding=False)
+        self.conv1 = Conv2d(1,10, 3, same_padding=True)
+        self.score_conv = Conv2d(10, len(self.anchor_scales) * 3 * 2, 1, relu=False, same_padding=False)
+        self.bbox_conv = Conv2d(10, len(self.anchor_scales) * 3 * 4, 1, relu=False, same_padding=False)
 
         # loss
         self.cross_entropy = None
@@ -66,36 +63,15 @@ class RPN(nn.Module):
         target_data = network.np_to_variable(target_data, is_cuda=True)
         target_data = target_data.permute(0, 3, 1, 2)
         target_features = self.features(target_data)
-        target_features = self.target_conv(target_features) 
-        target_features = target_features[:,:,0,0] 
-        #combine image and target features 
-        #just add them together
-        #combined_features = (.5*target_features.data.cpu().numpy() + 
-        #                    .5*features.data.cpu().numpy())
-        #combined_features = network.np_to_variable(combined_features)
-        #features = combined_features
+       
+        padding = (max(0,int(target_features.size()[2]/2)), 
+                   max(0,int(target_features.size()[3]/2)))
 
-        #concat and embed target features with features
-        #reshape features to be (33x60) X 512
-        #target is 1X512
-        #concat, fc embedding
-        #reshape again to 1x512x33x60 
-        features_permute = features.permute(0,2,3,1).contiguous()
-        features_reshape = self.reshape_layer(features_permute,33*60)
-        features_reshape = features_reshape[0,:,0,:]
-        #concatenate image features with target image features
-        x = torch.cat([features_reshape,target_features.expand(features_reshape.size()[0],
-                                                               target_features.size()[1])],1)
-        #embed the concatenated features
-        x = self.target_embedding(x)
-        x = x.unsqueeze(0)
-        x = x.unsqueeze(2)
-        x = self.reshape_layer(x,33)
-        x = x.permute(0,3,1,2).contiguous()
-        features = x 
+        conved_feats = F.conv2d(features,target_features, padding=padding)
 
-        rpn_conv1 = self.conv1(features)
+        rpn_conv1 = self.conv1(conved_feats)
 
+ 
         # rpn score
         rpn_cls_score = self.score_conv(rpn_conv1)
         rpn_cls_score_reshape = self.reshape_layer(rpn_cls_score, 2)
@@ -123,6 +99,7 @@ class RPN(nn.Module):
     def build_loss(self, rpn_cls_score_reshape, rpn_bbox_pred, rpn_data):
         # classification loss
         rpn_cls_score = rpn_cls_score_reshape.permute(0, 2, 3, 1).contiguous().view(-1, 2)
+        rpn_bbox_pred = rpn_bbox_pred.permute(0, 2, 3, 1).contiguous().view(-1, 4)
         rpn_label = rpn_data[0].view(-1)
 
         rpn_keep = Variable(rpn_label.data.ne(-1).nonzero().squeeze()).cuda()
@@ -131,7 +108,6 @@ class RPN(nn.Module):
 
         fg_cnt = torch.sum(rpn_label.data.ne(0))
 
-        #weight = [torch.FloatTensor([0]), torch.FloatTensor([10])]
         #weight = torch.FloatTensor([0,10])
         #weight = weight.cuda()
         #rpn_cross_entropy = F.cross_entropy(rpn_cls_score, rpn_label, weight=weight)

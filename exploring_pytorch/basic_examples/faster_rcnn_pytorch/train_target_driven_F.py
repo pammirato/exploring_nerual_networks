@@ -8,7 +8,7 @@ import cv2
 #import matplotlib.pyplot as plt
 
 from faster_rcnn import network
-from faster_rcnn.faster_rcnn_target_driven_archB import FasterRCNN, RPN
+from faster_rcnn.faster_rcnn_target_driven_archF import FasterRCNN, RPN
 #from faster_rcnn.faster_rcnn_target_driven import FasterRCNN, RPN
 from faster_rcnn.utils.timer import Timer
 
@@ -20,6 +20,8 @@ from faster_rcnn.fast_rcnn.config import cfg, cfg_from_file
 import active_vision_dataset_processing.data_loading.active_vision_dataset_pytorch as AVD  
 import active_vision_dataset_processing.data_loading.transforms as AVD_transforms
 import exploring_pytorch.basic_examples.GetDataSet as GetDataSet
+from test_target_driven_F import test_net, im_detect
+from exploring_pytorch.basic_examples.DetecterEvaluater import DetectorEvaluater
 
 
 #TODO make target image to gt_box index(id) more robust,clean, better
@@ -53,14 +55,14 @@ pretrained_model = '/playpen/ammirato/Data/Detections/pretrained_models/VGG_imag
 #output_dir = 'models/saved_model3'
 output_dir = ('/playpen/ammirato/Data/Detections/' + 
              '/saved_models/')
-save_name_base = 'FRA_TD_1-5_archB_2'
-save_freq = 10 
+save_name_base = 'FRA_TD_1-5_archF_3'
+save_freq = 1 
 
 trained_model_path = ('/playpen/ammirato/Data/Detections/' +
                      '/saved_models/')
-trained_model_name = 'FRA_TD_1-5_archB_1_59_2.30055.h5'
+trained_model_name = 'FRA_TD_1-5_archF_3_8_98.28528.h5'
 load_trained_model = False 
-trained_epoch =59
+trained_epoch = 5
 
 start_step = 0
 end_step = 100000
@@ -101,16 +103,16 @@ data_path = '/playpen/ammirato/Data/HalvedRohitData/'
 #             'Home_014_2',
 #            ]
 train_list=[
-             'Home_001_1',
-             'Home_001_2',
-             'Home_002_1',
-             'Home_004_1',
-             'Home_004_2',
-             'Home_005_1',
-             'Home_005_2',
-             'Home_006_1',
-             'Home_008_1',
-             'Home_014_1',
+             #'Home_001_1',
+             #'Home_001_2',
+             #'Home_002_1',
+             #'Home_004_1',
+             #'Home_004_2',
+             #'Home_005_1',
+             #'Home_005_2',
+             #'Home_006_1',
+             #'Home_008_1',
+             #'Home_014_1',
              'Home_014_2',
             ]
 
@@ -120,11 +122,12 @@ test_list=[
           ]
 
 chosen_ids = range(6)
+max_difficulty = 4
 #CREATE TRAIN/TEST splits
 train_set = GetDataSet.get_fasterRCNN_AVD(data_path,
                                           train_list,
                                           #test_list,
-                                          max_difficulty=4,
+                                          max_difficulty=max_difficulty,
                                           chosen_ids=chosen_ids,
                                           by_box=False,
                                           fraction_of_no_box=.1)
@@ -134,6 +137,13 @@ trainloader = torch.utils.data.DataLoader(train_set,
                                           batch_size=1,
                                           shuffle=True,
                                           collate_fn=AVD.collate)
+
+#for testing
+id_to_name = GetDataSet.get_class_id_to_name_dict(data_path)
+name_to_id = {}
+for cid in id_to_name.keys():
+    name_to_id[id_to_name[cid]] = cid
+
 
 #load all target images
 target_path = '/playpen/ammirato/Data/big_bird_crops_80'
@@ -147,11 +157,6 @@ for name in image_names:
     target_data = np.expand_dims(target_data,axis=0)
     target_images.append(target_data)
 
-
-#imdb = get_imdb(imdb_name)
-#rdl_roidb.prepare_roidb(imdb)
-#roidb = imdb.roidb
-#data_layer = RoIDataLayer(roidb, imdb.num_classes)
 
 # load net
 #net = FasterRCNN(classes=imdb.classes, debug=_DEBUG)
@@ -182,17 +187,6 @@ optimizer = torch.optim.SGD(params[8:], lr=lr, momentum=momentum, weight_decay=w
 if not os.path.exists(output_dir):
     os.mkdir(output_dir)
 
-# tensorboad
-use_tensorboard = use_tensorboard and CrayonClient is not None
-if use_tensorboard:
-    cc = CrayonClient(hostname='127.0.0.1')
-    if remove_all_log:
-        cc.remove_all_experiments()
-    if exp_name is None:
-        exp_name = datetime.now().strftime('vgg16_%m-%d_%H-%M')
-        exp = cc.create_experiment(exp_name)
-    else:
-        exp = cc.open_experiment(exp_name)
 
 # training
 train_loss = 0
@@ -227,7 +221,7 @@ for epoch in range(num_epochs):
 
         #pick a random target, with a bias towards choosing a target that 
         #is in the image. Also pick just one gt_box, since there is one target
-        if np.random.rand() < .3 and objects_present.shape[0]!=0:
+        if np.random.rand() < .6 and objects_present.shape[0]!=0:
             target_ind = int(np.random.choice(objects_present))
             gt_boxes = gt_boxes[np.where(gt_boxes[:,4]==target_ind)[0],:-1]
             gt_boxes[0,4] = 1
@@ -251,12 +245,6 @@ for epoch in range(num_epochs):
         ir_cnt +=1
         net(target_data,im_data, im_info, gt_boxes, gt_ishard, dontcare_areas)
         loss = net.loss + net.rpn.loss
-
-        #if _DEBUG:
-            #tp += float(net.tp)
-            #tf += float(net.tf)
-            #fg += net.fg_cnt
-            #bg += net.bg_cnt
 
         train_loss += loss.data[0]
         step_cnt += 1
@@ -290,37 +278,96 @@ for epoch in range(num_epochs):
                 )
             re_cnt = True
 
-        if use_tensorboard and step % log_interval == 0:
-            exp.add_scalar_value('train_loss', train_loss / step_cnt, step=step)
-            exp.add_scalar_value('learning_rate', lr, step=step)
-            if _DEBUG:
-                exp.add_scalar_value('true_positive', tp/fg*100., step=step)
-                exp.add_scalar_value('true_negative', tf/bg*100., step=step)
-                losses = {'rpn_cls': float(net.rpn.cross_entropy.data.cpu().numpy()[0]),
-                          'rpn_box': float(net.rpn.loss_box.data.cpu().numpy()[0]),
-                          'rcnn_cls': float(net.cross_entropy.data.cpu().numpy()[0]),
-                          'rcnn_box': float(net.loss_box.data.cpu().numpy()[0])}
-                exp.add_scalar_dict(losses, step=step)
-
+    ######################################################
     #epoch over
+
+    #test net on some val data
+    data_path = '/playpen/ammirato/Data/HalvedRohitData/'
+    scene_list=[
+             #'Home_003_1',
+             'Home_014_1',
+             #'Home_003_2',
+             #'test',
+             #'Office_001_1'
+             ]
+
+
+    
+    #CREATE TRAIN/TEST splits
+    valset = GetDataSet.get_fasterRCNN_AVD(data_path,
+                                            scene_list,
+                                            preload=False,
+                                            chosen_ids=chosen_ids, 
+                                            by_box=False,
+                                            fraction_of_no_box=0)
+
+    #create train/test loaders, with CUSTOM COLLATE function
+    valloader = torch.utils.data.DataLoader(valset,
+                                              batch_size=1,
+                                              shuffle=True,
+                                              collate_fn=AVD.collate)
+
+
+    image_names = os.listdir(target_path)
+    image_names.sort()
+    #target_images = []
+    target_images2 ={} 
+    means = np.array([[[102.9801, 115.9465, 122.7717]]])
+    for name in image_names:
+        target_data = cv2.imread(os.path.join(target_path,name))
+        target_data = target_data - means
+        target_data = np.expand_dims(target_data,axis=0)
+        #target_images[name[:-11]] = target_data
+        target_images2[name[:-7]] = target_data
+
+
+
+    print 'Testing...'
+
+    net.eval()
+    # evaluation
+    #test_net(model_name, net, dataloader, max_per_image, thresh=thresh, vis=vis,
+    #         output_dir='/playpen/ammirato/Data/Detections/FasterRCNN_AVD/')
+    max_per_image = 5
+    all_results = test_net(trained_model_name, net, valloader, name_to_id, target_images2, max_per_image=max_per_image)
+
+
+    evaluater = DetectorEvaluater(score_thresholds=np.linspace(0,1,11),
+                                  recall_thresholds=np.linspace(0,1,11))
+    #m_ap,ap,max_p,errors,gt_total, image_counts = evaluater.run(
+    m_ap = evaluater.run(
+                all_results,gt_boxes,chosen_ids,
+                max_difficulty=max_difficulty,
+                difficulty_classifier=valset.get_box_difficulty)
+
+
+
+
+    print m_ap
+
+
+
+    net.train()
+
+
+    break
+
+
+
+
+
+
+
     if epoch % save_freq == 0:
         if load_trained_model:
-            save_name = os.path.join(output_dir, save_name_base+'_{}.h5'.format(
-                                                  epoch+trained_epoch+1))
+            save_name = os.path.join(output_dir, save_name_base+'_{}_{}.h5'.format(
+                                                  epoch+trained_epoch+1), epoch_loss/step_cnt)
         else:
             save_name = os.path.join(output_dir, save_name_base+'_{}_{:1.5f}.h5'.format(epoch, train_loss/step_cnt))
         network.save_net(save_name, net)
         print('save model: {}'.format(save_name))
 
 
-#    if step in lr_decay_steps:
-#        lr *= lr_decay
-#        optimizer = torch.optim.SGD(params[8:], lr=lr, momentum=momentum, weight_decay=weight_decay)
-#
-#    if re_cnt:
-#        tp, tf, fg, bg = 0., 0., 0, 0
-#        train_loss = 0
-#        step_cnt = 0
-#        t.tic()
-#        re_cnt = False
+
+
 

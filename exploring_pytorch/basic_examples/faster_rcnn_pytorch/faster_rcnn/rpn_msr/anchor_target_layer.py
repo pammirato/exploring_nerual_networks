@@ -47,6 +47,17 @@ def anchor_target_layer(rpn_cls_score, gt_boxes, gt_ishard, dontcare_areas, im_i
     rpn_bbox_outside_weights: (HxWxA, 4) used to balance the fg/bg,
                             beacuse the numbers of bgs and fgs mays significiantly different
     """
+
+    rpn_scores = rpn_cls_score.reshape(1,2,297,60)
+    rpn_scores = rpn_scores.swapaxes(2,1)
+    rpn_scores = rpn_scores.swapaxes(3,2)
+    rpn_scores = rpn_scores.reshape(-1,2)
+
+
+
+
+
+
     _anchors = generate_anchors(scales=np.array(anchor_scales))
     _num_anchors = _anchors.shape[0]
 
@@ -128,6 +139,7 @@ def anchor_target_layer(rpn_cls_score, gt_boxes, gt_ishard, dontcare_areas, im_i
 
     # keep only inside anchors
     anchors = all_anchors[inds_inside, :]
+    rpn_scores = rpn_scores[inds_inside,:]
     if DEBUG:
         print 'anchors.shape', anchors.shape
 
@@ -204,11 +216,20 @@ def anchor_target_layer(rpn_cls_score, gt_boxes, gt_ishard, dontcare_areas, im_i
     num_bg = cfg.TRAIN.RPN_BATCHSIZE - np.sum(labels == 1)
     bg_inds = np.where(labels == 0)[0]
     if len(bg_inds) > num_bg:
+        #Phil
+        #hard mine negatives
+        hard_negs = np.where((rpn_scores[:,1]>1) & (labels==0))[0]
+
         disable_inds = npr.choice(
             bg_inds, size=(len(bg_inds) - num_bg), replace=False)
         labels[disable_inds] = -1
         # print "was %s inds, disabling %s, now %s inds" % (
         # len(bg_inds), len(disable_inds), np.sum(labels == 0))
+
+        #Phil
+        #hard mine negatives
+        labels[hard_negs] = 0
+
 
     #Phil add
     if gt_boxes.shape[0] == 0:
@@ -265,32 +286,39 @@ def anchor_target_layer(rpn_cls_score, gt_boxes, gt_ishard, dontcare_areas, im_i
         print 'rpn: num_positive avg', _fg_sum / _count
         print 'rpn: num_negative avg', _bg_sum / _count
 
-    # labels
-    # pdb.set_trace()
-    labels = labels.reshape((1, height, width, A))
-    labels = labels.transpose(0, 3, 1, 2)
-    rpn_labels = labels.reshape((1, 1, A * height, width)).transpose(0, 2, 3, 1)
-
-    # bbox_targets
-    bbox_targets = bbox_targets \
-        .reshape((1, height, width, A * 4)).transpose(0, 3, 1, 2)
-
+    #Phil
+    rpn_labels = labels
     rpn_bbox_targets = bbox_targets
-    # bbox_inside_weights
-    bbox_inside_weights = bbox_inside_weights \
-        .reshape((1, height, width, A * 4)).transpose(0, 3, 1, 2)
-    # assert bbox_inside_weights.shape[2] == height
-    # assert bbox_inside_weights.shape[3] == width
-
     rpn_bbox_inside_weights = bbox_inside_weights
-
-    # bbox_outside_weights
-    bbox_outside_weights = bbox_outside_weights \
-        .reshape((1, height, width, A * 4)).transpose(0, 3, 1, 2)
-    # assert bbox_outside_weights.shape[2] == height
-    # assert bbox_outside_weights.shape[3] == width
-
     rpn_bbox_outside_weights = bbox_outside_weights
+
+
+#    # labels
+#    # pdb.set_trace()
+#    labels = labels.reshape((1, height, width, A))
+#    labels = labels.transpose(0, 3, 1, 2)
+#    rpn_labels = labels.reshape((1, 1, A * height, width)).transpose(0, 2, 3, 1)
+#
+#    # bbox_targets
+#    bbox_targets = bbox_targets \
+#        .reshape((1, height, width, A * 4)).transpose(0, 3, 1, 2)
+#
+#    rpn_bbox_targets = bbox_targets
+#    # bbox_inside_weights
+#    bbox_inside_weights = bbox_inside_weights \
+#        .reshape((1, height, width, A * 4)).transpose(0, 3, 1, 2)
+#    # assert bbox_inside_weights.shape[2] == height
+#    # assert bbox_inside_weights.shape[3] == width
+#
+#    rpn_bbox_inside_weights = bbox_inside_weights
+#
+#    # bbox_outside_weights
+#    bbox_outside_weights = bbox_outside_weights \
+#        .reshape((1, height, width, A * 4)).transpose(0, 3, 1, 2)
+#    # assert bbox_outside_weights.shape[2] == height
+#    # assert bbox_outside_weights.shape[3] == width
+#
+#    rpn_bbox_outside_weights = bbox_outside_weights
 
     return rpn_labels, rpn_bbox_targets, rpn_bbox_inside_weights, rpn_bbox_outside_weights
 

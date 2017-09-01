@@ -16,7 +16,7 @@ from fast_rcnn.bbox_transform import bbox_transform_inv, clip_boxes
 import network
 from network import Conv2d, FC
 # from roi_pooling.modules.roi_pool_py import RoIPool
-from roi_pooling.modules.roi_pool import RoIPool
+#from roi_pooling.modules.roi_pool import RoIPool
 from vgg16_extractor import VGG16
 
 import scipy.spatial.distance as sci_dist
@@ -31,8 +31,6 @@ class Patch_Detector(nn.Module):
         super(Patch_Detector, self).__init__()
 
         self.features = VGG16(bn=True)
-        self.img_patch_conv = Conv2d(512,512,5, same_padding=True)
-        self.anchor_patch_conv = Conv2d(512,512,5)
 
         self._feat_stride = 16
         self.triplet_loss = None
@@ -41,11 +39,11 @@ class Patch_Detector(nn.Module):
         self.num_classes =  2#len(classes) 
         self.training = False 
 
-        self.classifier = FC(512,self.num_classes, relu=False)
+        #self.classifier = FC(512,self.num_classes, relu=False)
 
     @property
     def loss(self):
-        return self.cross_entropy * 10 + self.triplet_loss
+        return self.cross_entropy
 
     def forward(self, im_data, anchor_data, target_box=None, other_boxes=None):
         im_data = network.np_to_variable(im_data, is_cuda=True)
@@ -56,23 +54,16 @@ class Patch_Detector(nn.Module):
         anchor_data = anchor_data.permute(0, 3, 1, 2)
         anchor_features = self.features(anchor_data)
 
-        img_patch_fts = self.img_patch_conv(img_features)
-        anchor_patch_fts = self.anchor_patch_conv(anchor_features)
+        padding = (max(0,int(anchor_features.size()[2]/2)), 
+                   max(0,int(anchor_features.size()[3]/2)))
 
-        #img_patch_fts = img_patch_fts.contiguous().view(512,-1).permute(1,0)
-        img_patch_fts = img_patch_fts.contiguous().view(512,-1)
-        anchor_patch_fts = anchor_patch_fts[0,:,0,:]      
-
-        patch_fts = img_patch_fts + anchor_patch_fts.expand_as(img_patch_fts)
-        patch_fts = patch_fts.permute(1,0)
-
- 
-        class_scores = self.classifier(patch_fts) 
+        conved_feats = F.conv2d(img_features,anchor_features, padding=padding)
+        
 
         if self.training:
-            self.build_loss(patch_fts,class_scores, img_features,anchor_features,target_box,other_boxes)
+            self.build_loss(conved_feats,target_box,other_boxes)
 
-        return class_scores, img_features
+        return conved_feats 
 
     @staticmethod
     def reshape_layer(x, d):
@@ -90,210 +81,119 @@ class Patch_Detector(nn.Module):
 
 
 
-    def build_loss(self, patch_features, class_scores, img_features, anchor_features, target_box, other_boxes):
+    def build_loss(self, heat_map,target_box, other_boxes):
+
+        heat_map = torch.div(heat_map, 512)
 
 
-        #convert target box to feature map coords
-        target_id = target_box[4].astype(np.int64)
-        target_box = (target_box[0:4] -1) / self._feat_stride
-        target_box[0] = min(target_box[0], img_features.size()[3]-1)
-        target_box[1] = min(target_box[1], img_features.size()[2]-1)
-        target_box[2] = min(target_box[2], img_features.size()[3]-1)
-        target_box[3] = min(target_box[3], img_features.size()[2]-1)
-        target_box = target_box.astype(np.int32)
-        target_box_center = [int((target_box[2]-target_box[0])/2.0+target_box[0]), 
-                             int((target_box[3]-target_box[1])/2.0+target_box[1])]
-        
-        #get target features from full image features
-        target_features = img_features[0,:,target_box[1]:target_box[3]+1,
-                                           target_box[0]:target_box[2]+1]
+        if target_box.shape[0]>0:
 
-        #print other_boxes.shape 
+            #convert target box to feature map coords
+            target_id = target_box[4].astype(np.int64)
+            target_box = (target_box[0:4] -1) / self._feat_stride
+            target_box[0] = min(target_box[0], heat_map.size()[3]-1)
+            target_box[1] = min(target_box[1], heat_map.size()[2]-1)
+            target_box[2] = min(target_box[2], heat_map.size()[3]-1)
+            target_box[3] = min(target_box[3], heat_map.size()[2]-1)
+            target_box = target_box.astype(np.int32)
+            target_box_center = [int((target_box[2]-target_box[0])/2.0+target_box[0]), 
+                                 int((target_box[3]-target_box[1])/2.0+target_box[1])]
+            
+            #get target features from full image features
+            target_heats = heat_map[0,:,target_box[1]:target_box[3]+1,
+                                               target_box[0]:target_box[2]+1]
 
-        other_random_indexes = True
+
         #if there is another object in this image, get its features
         if other_boxes.shape[0]>0:
 
             #convert other boxes to feature map coords
-            other_classes = other_boxes[:,4]
             other_boxes = (other_boxes[0:4] -1) / self._feat_stride
-            other_boxes[:,0] = np.fmin(other_boxes[:,0], img_features.size()[3]-1)
-            other_boxes[:,1] = np.fmin(other_boxes[:,1], img_features.size()[2]-1)
-            other_boxes[:,2] = np.fmin(other_boxes[:,2], img_features.size()[3]-1)
-            other_boxes[:,3] = np.fmin(other_boxes[:,3], img_features.size()[2]-1)
+            other_boxes[:,0] = np.fmin(other_boxes[:,0], heat_map.size()[3]-1)
+            other_boxes[:,1] = np.fmin(other_boxes[:,1], heat_map.size()[2]-1)
+            other_boxes[:,2] = np.fmin(other_boxes[:,2], heat_map.size()[3]-1)
+            other_boxes[:,3] = np.fmin(other_boxes[:,3], heat_map.size()[2]-1)
             other_boxes = other_boxes.astype(np.int32)
 
             #get other features from full image
             #TODO:  get both bg and other objects
             o_ind = np.random.choice(np.arange(other_boxes.shape[0])) 
-            other_id = other_classes[o_ind].astype(np.int32)
-            other_features_X = img_features[0,
-                                            :,
-                                            other_boxes[o_ind,1]:other_boxes[o_ind,3]+1,
-                                            other_boxes[o_ind,0]:other_boxes[o_ind,2]+1]
+            other_heats = heat_map[0,
+                                    :,
+                                    other_boxes[o_ind,1]:other_boxes[o_ind,3]+1,
+                                    other_boxes[o_ind,0]:other_boxes[o_ind,2]+1]
             other_box = other_boxes[o_ind,:]
             other_box_center = [int((other_box[2]-other_box[0])/2.0+other_box[0]), 
                                  int((other_box[3]-other_box[1])/2.0+other_box[1])]
 
         else:#otherwise get a hard mined negative bg features 
-            #1. get all image features, target features
-            #2. resize to NxD, D = feature vector length
-            #3. get distances between all pairs of features            
-            #4. get F feature vecs with min dist >0. F = #of target features
+            
+            #sort heat map vals
+            np_heats = heat_map.data.cpu().numpy().squeeze()
+            sort_by_row = np_heats.argsort()
+            max_col_in_row = sort_by_row[:,-1] 
 
-            #1
-            np_img_features = img_features.data.cpu().numpy().squeeze()
-            np_target_features = target_features.data.cpu().numpy()
+
+            possible_rows = np.arange(np_heats.shape[0])
+            if target_box.shape[0]>0:
+                #expand the box a bit
+                close_to_target = [max(0,target_box[1]-1), 
+                                   max(heat_map.size()[2],target_box[3]+2)]
+                possible_rows = np.delete(possible_rows,np.arange(close_to_target[0],
+                                                                  close_to_target[1]))
+                
            
-            #2 
-            np_img_features = np.reshape(np_img_features,(512,-1))
-            np_img_features = np.swapaxes(np_img_features,1,0)
-            np_target_features = np.reshape(np_target_features,(512,-1))
-            np_target_features = np.swapaxes(np_target_features,1,0)
-        
-            #3 
-            distances = sci_dist.cdist(np_target_features,np_img_features) 
+            #pick ten random inds 
+            num_to_pick = np.fmin(possible_rows.size, 10)
+            rows = np.random.choice(possible_rows,num_to_pick,replace=False)
+            cols = max_col_in_row[rows]
 
-            #4
-            #get 2nd smallest distances for each target feature
-            mins = np.partition(distances, 1)[:,1] 
-            #get 2d indices of the image features that had the min distances 
-            locs = [np.where(distances[il,:] == mins[il])[0][0] for il in range(len(mins))]
-            locs2 = np.unravel_index(locs,(33,60))   
-            rowsv = Variable(torch.LongTensor(locs2[0]).cuda()) 
-            colsv = Variable(torch.LongTensor(locs2[1]).cuda())
+            rowsv = Variable(torch.LongTensor(rows).cuda()) 
+            colsv = Variable(torch.LongTensor(cols).cuda())
             #select those features from the total image features
             #first pick out all the rows and cols you want
-            mfeatr = torch.index_select(img_features,2,rowsv)
-            mfeatrc = torch.index_select(mfeatr,3,colsv) 
+            mhr = torch.index_select(heat_map,2,rowsv)
+            mhrc = torch.index_select(mhr,3,colsv) 
             #then select the diagnol of the new feature map
-            inds = np.arange(mfeatrc.size()[2])
-            inds2 = np.expand_dims(np.expand_dims(np.matlib.repmat(inds,512,1),2),0)
+            inds = np.arange(mhrc.size()[2])
+            inds2 = np.expand_dims(np.expand_dims(np.matlib.repmat(inds,1,1),2),0)
             inds2v = Variable(torch.LongTensor(inds2.astype(np.int64)).cuda())
-            other_features_X = torch.gather(mfeatrc, 3, inds2v)
+            other_heats = torch.gather(mhrc, 3, inds2v)
 
-            #make sure the hard mined pairs stay together
-            other_random_indexes = False 
-            other_id = 0
-    
-            other_box_center = [locs2[0][0], locs2[1][0]]
 
+        target_loss = network.np_to_variable(np.zeros(1), is_cuda=True)
         #resize all features to be 512xN, N=num_patches
-        anchor_features.squeeze()
-        anchor_features = anchor_features.contiguous().view(512,-1)
-        target_features = target_features.contiguous().view(512,-1)
-        other_features_X = other_features_X.contiguous().view(512,-1)
+        if target_box.shape[0]>0:
+            target_heats = target_heats.contiguous().view(1,-1)
+            #target_loss = F.smooth_l1_loss(target_heats,target_label)
+            ones = network.np_to_variable(np.ones(
+                                     int(target_heats.size()[1])),is_cuda=True,
+                                     dtype=torch.FloatTensor)
+            target_label = network.np_to_variable(np.ones(
+                                     int(target_heats.size()[1]))*-1,is_cuda=True,
+                                     dtype=torch.FloatTensor)
+            target_loss = torch.sum(torch.log(torch.add(ones,
+                            torch.exp(torch.mul(target_heats,target_label)))))
 
 
-        #choose training patch triplets (anchor, target, other)
-        #Algorithm: (random)
-        #Use as each feature vector once, but use as many as possible 
-        #
-        #1. Select how many patches to use(min of # of patches in anchor/target/other)
-        #2. Generate random indexes for each(anchor/target/other)
-        #3. select the random patches
+        other_heats = other_heats.contiguous().view(1,-1)
+        ones = network.np_to_variable(np.ones(
+                                 int(other_heats.size()[1])),is_cuda=True,
+                                 dtype=torch.FloatTensor)
+        other_label = network.np_to_variable(np.ones(
+                                 int(other_heats.size()[1]))*1,is_cuda=True, 
+                                 dtype=torch.FloatTensor)
+        other_loss = torch.sum(torch.log(torch.add(ones,
+                        torch.exp(torch.mul(other_heats,other_label)))))
+        self.cross_entropy  = target_loss + other_loss
 
 
-        #first pick how many patches to use
-        num_patches = min(target_features.size()[1], 
-                           anchor_features.size()[1],
-                           other_features_X.size()[1])
-
-        #genereate random indexes
-        anchor_indexes = np.random.permutation(
-                          np.random.choice(
-                            np.arange(anchor_features.size()[1]), 
-                                        num_patches, replace=False))
-
-        target_indexes = np.random.permutation(
-                          np.random.choice(
-                            np.arange(target_features.size()[1]), 
-                                        num_patches, replace=False))
-
-        if other_random_indexes:
-            #choose random indexes for other too
-            other_indexes = np.random.permutation(
-                              np.random.choice(
-                                np.arange(other_features_X.size()[1]),
-                                            num_patches, replace=False))
-
-        else:
-            #choose same indexes for target and other
-            other_indexes = target_indexes 
-
-            
-
-
-
-        #select the patches
-        anchor_patches = torch.index_select(anchor_features,1,
-                                Variable(torch.LongTensor(anchor_indexes).cuda()))
-        target_patches = torch.index_select(target_features,1,
-                                Variable(torch.LongTensor(target_indexes).cuda()))
-        other_patches = torch.index_select(other_features_X,1,
-                                Variable(torch.LongTensor(other_indexes).cuda()))
-
-
-        anchor_patches = anchor_patches.permute(1,0)
-        target_patches = target_patches.permute(1,0)
-        other_patches = other_patches.permute(1,0)
-
-
-        #print 'A: {}  T: {}  O: {}'.format(anchor_patches.mean().data.cpu().numpy(),
-        #                                   target_patches.mean().data.cpu().numpy(),
-        #                                   other_patches.mean().data.cpu().numpy())
-
-        self.triplet_loss = F.triplet_margin_loss(anchor_patches, 
-                                                  target_patches,
-                                                  other_patches,
-                                                  margin=3)
-
-
-
-
-#        anchor_scores = self.classifier(anchor_patches)
-#        target_scores = self.classifier(target_patches)
-#        other_scores = self.classifier(other_patches)
-#
-#        #make gt labels
-#        target_gt_labels = Variable(torch.LongTensor(np.ones(
-#                                anchor_scores.size()[0]).astype(np.int64)*target_id).cuda())
-#
-#        #other_class = 0
-#        #if other_boxes.shape[0] > 0:
-#        #    other_class = other_boxes[o_ind,4]
-#        other_gt_labels = Variable(torch.LongTensor(np.ones(
-#                                anchor_scores.size()[0]).astype(np.int64)*other_id).cuda())
-#
-#
-#        target_ce = F.cross_entropy(target_scores,target_gt_labels, size_average=False)
-#        anchor_ce = F.cross_entropy(anchor_scores,target_gt_labels, size_average=False)
-#        other_ce = F.cross_entropy(other_scores,other_gt_labels, size_average=False)
-#
-#        #print 'T: {} ACE: {} OCE: {}'.format(target_ce.data.cpu().numpy(),
-#        #                                     anchor_ce.data.cpu().numpy(),
-#        #                                     other_ce.data.cpu().numpy())
-#        #print 'T: {} Other: {}'.format(target_id, other_id)
-#
-#        self.cross_entropy = target_ce + anchor_ce + other_ce
-
-
-        target_label = network.np_to_variable(np.ones(1),is_cuda=True, dtype=torch.LongTensor)
-        other_label = network.np_to_variable(np.zeros(1),is_cuda=True, dtype=torch.LongTensor)
-
-        target_loc = target_box_center[1]*33 + target_box_center[0]
-        other_loc = other_box_center[1]*33 + other_box_center[0]
-        target_loc = network.np_to_variable(np.array([target_loc]),is_cuda=True,dtype=torch.LongTensor)
-        other_loc = network.np_to_variable(np.array([other_loc]),is_cuda=True,dtype=torch.LongTensor)
-        
-        target_score = torch.index_select(class_scores,0,target_loc)
-        other_score = torch.index_select(class_scores,0,other_loc)
-
-
-        target_ce = F.cross_entropy(target_score,target_label)
-        other_ce = F.cross_entropy(other_score,other_label)
-
-        self.cross_entropy  = target_ce + other_ce
+        #target_mean = target_heats.mean()
+        #other_mean = other_heats.mean()
+        #margin = network.np_to_variable(np.array([100]), is_cuda=True)
+        #zero = network.np_to_variable(np.zeros(1), is_cuda=True)      
+ 
+        #self.cross_entropy = torch.max(zero, other_mean + margin - target_mean)
 
 
     def train(self):

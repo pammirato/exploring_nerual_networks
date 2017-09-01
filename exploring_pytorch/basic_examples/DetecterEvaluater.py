@@ -544,11 +544,11 @@ if __name__ == '__main__':
              ] 
 
     max_difficulty=4
-    chosen_ids = range(28)
+    chosen_ids = range(6)
     dataset = GetDataSet.get_fasterRCNN_AVD(data_path,
                                             scene_list,
                                             chosen_ids=chosen_ids,
-                                            fraction_of_no_box=1,
+                                            fraction_of_no_box=0,
                                             max_difficulty=5)
     gt_boxes = dataset.get_original_bboxes()
 
@@ -566,6 +566,19 @@ if __name__ == '__main__':
                            #'FRA_TD_1-5_archD_0_68',
 
 
+                           'FRA_TD_1-5_archF_2_6',
+                           'FRA_TD_1-5_archF_2_10',
+                           'FRA_TD_1-5_archF_2_15',
+                           'FRA_TD_1-5_archF_2_20',
+                           'FRA_TD_1-5_archF_2_25',
+                           'FRA_TD_1-5_archF_2_30',
+                           'FRA_TD_1-5_archF_2_35',
+                           'FRA_TD_1-5_archF_2_40',
+                           'FRA_TD_1-5_archF_2_45',
+                           'FRA_TD_1-5_archF_2_50',
+                           'FRA_TD_1-5_archF_2_55',
+                           'FRA_TD_1-5_archF_2_60',
+                           
                            #'FRA_TD_1-28_archA2_0_0',
                            #'FRA_TD_1-28_archA2_0_2',
                            #'FRA_TD_1-28_archA2_0_4',
@@ -577,7 +590,7 @@ if __name__ == '__main__':
                            #'FRA_TD_1-28_archA2_0_16',
                            #'FRA_TD_1-28_archA2_0_18',
                            #'FRA_TD_1-28_archA2_0_20',
-                           'FRA_TD_1-28_archA2_0_22',
+                           #'FRA_TD_1-28_archA2_0_22',
                            #'FRA_TD_1-28_archA2_0_24',
                            #'FRA_TD_1-28_archA2_0_26',
                            #'FRA_TD_1-28_archA2_0_28',
