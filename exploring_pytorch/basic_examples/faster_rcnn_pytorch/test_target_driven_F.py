@@ -39,18 +39,19 @@ trained_model_names=[#'faster_rcnn_avd_split2_target_driven_fc7+_concat_vgg_feat
                     #'FRA_TD_1-5_archC_1_54',
                     #'FRA_TD_1-5_archA2_0_12',
 
-                    'FRA_TD_1-5_archF_2_6',
-                    'FRA_TD_1-5_archF_2_10',
-                    'FRA_TD_1-5_archF_2_15',
-                    'FRA_TD_1-5_archF_2_20',
-                    'FRA_TD_1-5_archF_2_25',
-                    'FRA_TD_1-5_archF_2_30',
-                    'FRA_TD_1-5_archF_2_35',
-                    'FRA_TD_1-5_archF_2_40',
-                    'FRA_TD_1-5_archF_2_45',
-                    'FRA_TD_1-5_archF_2_50',
-                    'FRA_TD_1-5_archF_2_55',
-                    'FRA_TD_1-5_archF_2_60',
+                    'FRA_TD_1-28_archF_7_7_23.27034_0.16408',
+                    #'FRA_TD_1-5_archF_2_6',
+                    #'FRA_TD_1-5_archF_2_10',
+                    #'FRA_TD_1-5_archF_2_15',
+                    #'FRA_TD_1-5_archF_2_20',
+                    #'FRA_TD_1-5_archF_2_25',
+                    #'FRA_TD_1-5_archF_2_30',
+                    #'FRA_TD_1-5_archF_2_35',
+                    #'FRA_TD_1-5_archF_2_40',
+                    #'FRA_TD_1-5_archF_2_45',
+                    #'FRA_TD_1-5_archF_2_50',
+                    #'FRA_TD_1-5_archF_2_55',
+                    #'FRA_TD_1-5_archF_2_60',
                     #'FRA_TD_1-5_archA2_0_24',
                     #'FRA_TD_1-5_archA2_0_26',
                     #'FRA_TD_1-5_archA2_0_28',
@@ -260,8 +261,8 @@ def test_net(name, net, dataloader, name_to_id, target_images, max_per_image=300
                     all_boxes[j][i] = all_boxes[j][i][keep, :]
             nms_time = _t['misc'].toc(average=False)
 
-            print 'im_detect: {:d}/{:d} {:.3f}s {:.3f}s' \
-                .format(i + 1, num_images, detect_time, nms_time)
+            #print 'im_detect: {:d}/{:d} {:.3f}s {:.3f}s' \
+            #    .format(i + 1, num_images, detect_time, nms_time)
 
             if vis:
                 #cv2.imshow('test', im2show)
@@ -316,7 +317,7 @@ if __name__ == '__main__':
     dataset = GetDataSet.get_fasterRCNN_AVD(data_path,
                                             scene_list,
                                             preload=False,
-                                            chosen_ids=range(7), 
+                                            chosen_ids=range(28), 
                                             by_box=False,
                                             fraction_of_no_box=0)
 
@@ -333,8 +334,8 @@ if __name__ == '__main__':
         name_to_id[id_to_name[cid]] = cid 
 
     #load all target images
-    #target_path = '/playpen/ammirato/Data/big_bird_patches_80'
-    target_path = '/playpen/ammirato/Data/big_bird_crops_80'
+    target_path = '/playpen/ammirato/Data/big_bird_patches_80'
+    #target_path = '/playpen/ammirato/Data/big_bird_crops_80'
     image_names = os.listdir(target_path)
     image_names.sort()
     #target_images = []
@@ -344,8 +345,8 @@ if __name__ == '__main__':
         target_data = cv2.imread(os.path.join(target_path,name))
         target_data = target_data - means
         target_data = np.expand_dims(target_data,axis=0)
-        #target_images[name[:-11]] = target_data
-        target_images[name[:-7]] = target_data
+        target_images[name[:-11]] = target_data
+        #target_images[name[:-7]] = target_data
 
 
     #test multiple trained nets

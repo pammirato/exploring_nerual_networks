@@ -565,19 +565,19 @@ if __name__ == '__main__':
                            #'FRA_TD_1-5_archC_1_15',
                            #'FRA_TD_1-5_archD_0_68',
 
-
-                           'FRA_TD_1-5_archF_2_6',
-                           'FRA_TD_1-5_archF_2_10',
-                           'FRA_TD_1-5_archF_2_15',
-                           'FRA_TD_1-5_archF_2_20',
-                           'FRA_TD_1-5_archF_2_25',
-                           'FRA_TD_1-5_archF_2_30',
-                           'FRA_TD_1-5_archF_2_35',
-                           'FRA_TD_1-5_archF_2_40',
-                           'FRA_TD_1-5_archF_2_45',
-                           'FRA_TD_1-5_archF_2_50',
-                           'FRA_TD_1-5_archF_2_55',
-                           'FRA_TD_1-5_archF_2_60',
+                           'FRA_TD_1-5_archF_6_71_29.06841_0.07448',
+                           #'FRA_TD_1-5_archF_2_6',
+                           #'FRA_TD_1-5_archF_2_10',
+                           #'FRA_TD_1-5_archF_2_15',
+                           #'FRA_TD_1-5_archF_2_20',
+                           #'FRA_TD_1-5_archF_2_25',
+                           #'FRA_TD_1-5_archF_2_30',
+                           #'FRA_TD_1-5_archF_2_35',
+                           #'FRA_TD_1-5_archF_2_40',
+                           #'FRA_TD_1-5_archF_2_45',
+                           #'FRA_TD_1-5_archF_2_50',
+                           #'FRA_TD_1-5_archF_2_55',
+                           #'FRA_TD_1-5_archF_2_60',
                            
                            #'FRA_TD_1-28_archA2_0_0',
                            #'FRA_TD_1-28_archA2_0_2',
@@ -633,7 +633,7 @@ if __name__ == '__main__':
                   'FasterRCNN_AVD/' + model_name+'.json') as f:
             det_results = json.load(f)
 
-        evaluater = DetectorEvaluater(score_thresholds=np.linspace(0,1,111),
+        evaluater = DetectorEvaluater(score_thresholds=np.linspace(0,1,11),
                                       recall_thresholds=np.linspace(0,1,11))
         #m_ap,ap,max_p,errors,gt_total, image_counts = evaluater.run(
         m_ap = evaluater.run(

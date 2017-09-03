@@ -31,7 +31,8 @@ def nms_detections(pred_boxes, scores, nms_thresh, inds=None):
 
 class RPN(nn.Module):
     _feat_stride = [16, ]
-    anchor_scales = [8, 16, 32]
+    #anchor_scales = [8, 16, 32]
+    anchor_scales = [2, 4, 8]
 
     def __init__(self):
         super(RPN, self).__init__()
@@ -39,10 +40,11 @@ class RPN(nn.Module):
         #first 5 conv layers of VGG? only resizing is 4 max pools
         self.features = VGG16(bn=False)
 
+        self.input_conv = Conv2d(3,3,1, relu=False, same_padding=True)
 
-        self.conv1 = Conv2d(1,10, 3, same_padding=True)
-        self.score_conv = Conv2d(10, len(self.anchor_scales) * 3 * 2, 1, relu=False, same_padding=False)
-        self.bbox_conv = Conv2d(10, len(self.anchor_scales) * 3 * 4, 1, relu=False, same_padding=False)
+        self.conv1 = Conv2d(1,32, 3, relu=False, same_padding=True)
+        self.score_conv = Conv2d(32, len(self.anchor_scales) * 3 * 2, 1, relu=False, same_padding=False)
+        self.bbox_conv = Conv2d(32, len(self.anchor_scales) * 3 * 4, 1, relu=False, same_padding=False)
 
         # loss
         self.cross_entropy = None
@@ -57,17 +59,29 @@ class RPN(nn.Module):
         #get image features 
         im_data = network.np_to_variable(im_data, is_cuda=True)
         im_data = im_data.permute(0, 3, 1, 2)
-        features = self.features(im_data)
+        im_in = self.input_conv(im_data)
+        features = self.features(im_in)
 
         #get target image features
         target_data = network.np_to_variable(target_data, is_cuda=True)
         target_data = target_data.permute(0, 3, 1, 2)
-        target_features = self.features(target_data)
+        target_in = self.input_conv(target_data)
+        target_features = self.features(target_in)
        
         padding = (max(0,int(target_features.size()[2]/2)), 
                    max(0,int(target_features.size()[3]/2)))
 
         conved_feats = F.conv2d(features,target_features, padding=padding)
+
+        if conved_feats.size()[2] > features.size()[2]:
+            conved_feats = torch.index_select(conved_feats, 2, 
+                                              network.np_to_variable(np.arange(0,features.size()[2]).astype(np.int32),
+                                                                     is_cuda=True,dtype=torch.LongTensor))
+        if conved_feats.size()[3] > features.size()[3]:
+            conved_feats = torch.index_select(conved_feats, 3, 
+                                              network.np_to_variable(np.arange(0,features.size()[3]).astype(np.int32),
+                                                                     is_cuda=True,dtype=torch.LongTensor))
+
 
         rpn_conv1 = self.conv1(conved_feats)
 
@@ -99,7 +113,7 @@ class RPN(nn.Module):
     def build_loss(self, rpn_cls_score_reshape, rpn_bbox_pred, rpn_data):
         # classification loss
         rpn_cls_score = rpn_cls_score_reshape.permute(0, 2, 3, 1).contiguous().view(-1, 2)
-        rpn_bbox_pred = rpn_bbox_pred.permute(0, 2, 3, 1).contiguous().view(-1, 4)
+#        rpn_bbox_pred = rpn_bbox_pred.permute(0, 2, 3, 1).contiguous().view(-1, 4)
         rpn_label = rpn_data[0].view(-1)
 
         rpn_keep = Variable(rpn_label.data.ne(-1).nonzero().squeeze()).cuda()
@@ -108,10 +122,11 @@ class RPN(nn.Module):
 
         fg_cnt = torch.sum(rpn_label.data.ne(0))
 
-        #weight = torch.FloatTensor([0,10])
+        #weight = torch.FloatTensor([.1,5])
         #weight = weight.cuda()
         #rpn_cross_entropy = F.cross_entropy(rpn_cls_score, rpn_label, weight=weight)
         rpn_cross_entropy = F.cross_entropy(rpn_cls_score, rpn_label, size_average=False)
+        #rpn_cross_entropy = F.cross_entropy(rpn_cls_score, rpn_label, size_average=False, weight=weight)
         #rpn_cross_entropy = F.cross_entropy(rpn_cls_score, rpn_label)
 
         # box loss

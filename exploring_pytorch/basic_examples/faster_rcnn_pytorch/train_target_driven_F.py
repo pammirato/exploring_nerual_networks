@@ -55,18 +55,18 @@ pretrained_model = '/playpen/ammirato/Data/Detections/pretrained_models/VGG_imag
 #output_dir = 'models/saved_model3'
 output_dir = ('/playpen/ammirato/Data/Detections/' + 
              '/saved_models/')
-save_name_base = 'FRA_TD_1-5_archF_3'
+save_name_base = 'FRA_TD_1-28_archF_7'
 save_freq = 1 
 
 trained_model_path = ('/playpen/ammirato/Data/Detections/' +
                      '/saved_models/')
-trained_model_name = 'FRA_TD_1-5_archF_3_8_98.28528.h5'
-load_trained_model = False 
-trained_epoch = 5
+trained_model_name = 'FRA_TD_1-28_archF_7_7_23.27034_0.16408.h5'
+load_trained_model = True 
+trained_epoch = 7 
 
 start_step = 0
 end_step = 100000
-num_epochs = 150
+num_epochs = 60 
 lr_decay_steps = {60000, 80000}
 lr_decay = 1./10
 
@@ -83,7 +83,7 @@ if rand_seed is not None:
 
 # load config
 cfg_from_file(cfg_file)
-lr = cfg.TRAIN.LEARNING_RATE
+lr = cfg.TRAIN.LEARNING_RATE * .5
 momentum = cfg.TRAIN.MOMENTUM
 weight_decay = cfg.TRAIN.WEIGHT_DECAY
 disp_interval =10# cfg.TRAIN.DISPLAY
@@ -103,16 +103,16 @@ data_path = '/playpen/ammirato/Data/HalvedRohitData/'
 #             'Home_014_2',
 #            ]
 train_list=[
-             #'Home_001_1',
-             #'Home_001_2',
-             #'Home_002_1',
-             #'Home_004_1',
-             #'Home_004_2',
-             #'Home_005_1',
-             #'Home_005_2',
-             #'Home_006_1',
-             #'Home_008_1',
-             #'Home_014_1',
+             'Home_001_1',
+             'Home_001_2',
+             'Home_002_1',
+             'Home_004_1',
+             'Home_004_2',
+             'Home_005_1',
+             'Home_005_2',
+             'Home_006_1',
+             'Home_008_1',
+             'Home_014_1',
              'Home_014_2',
             ]
 
@@ -121,8 +121,8 @@ test_list=[
             'Home_003_1',
           ]
 
-chosen_ids = range(6)
-max_difficulty = 4
+chosen_ids = range(28)
+max_difficulty = 4 
 #CREATE TRAIN/TEST splits
 train_set = GetDataSet.get_fasterRCNN_AVD(data_path,
                                           train_list,
@@ -130,7 +130,7 @@ train_set = GetDataSet.get_fasterRCNN_AVD(data_path,
                                           max_difficulty=max_difficulty,
                                           chosen_ids=chosen_ids,
                                           by_box=False,
-                                          fraction_of_no_box=.1)
+                                          fraction_of_no_box=.2)
 
 #create train/test loaders, with CUSTOM COLLATE function
 trainloader = torch.utils.data.DataLoader(train_set,
@@ -146,16 +146,31 @@ for cid in id_to_name.keys():
 
 
 #load all target images
-target_path = '/playpen/ammirato/Data/big_bird_crops_80'
+target_path = '/playpen/ammirato/Data/big_bird_patches_80'
 image_names = os.listdir(target_path)
 image_names.sort()
-target_images = []
+#target_images = []
+target_images ={} 
 means = np.array([[[102.9801, 115.9465, 122.7717]]])
+#for name in image_names:
+#    target_data = cv2.imread(os.path.join(target_path,name))
+#    target_data = target_data - means
+#    target_data = np.expand_dims(target_data,axis=0)
+#    target_images.append(target_data)
 for name in image_names:
     target_data = cv2.imread(os.path.join(target_path,name))
     target_data = target_data - means
     target_data = np.expand_dims(target_data,axis=0)
-    target_images.append(target_data)
+    target_images[name[:-11]] = target_data
+    #target_images[name[:-7]] = target_data
+
+
+
+
+
+
+
+
 
 
 # load net
@@ -182,7 +197,8 @@ net.train()
 
 params = list(net.parameters())
 # optimizer = torch.optim.Adam(params[-8:], lr=lr)
-optimizer = torch.optim.SGD(params[8:], lr=lr, momentum=momentum, weight_decay=weight_decay)
+#optimizer = torch.optim.SGD(params[8:], lr=lr, momentum=momentum, weight_decay=weight_decay)
+optimizer = torch.optim.SGD(params, lr=lr, momentum=momentum, weight_decay=weight_decay)
 
 if not os.path.exists(output_dir):
     os.mkdir(output_dir)
@@ -202,7 +218,9 @@ t.tic()
 for epoch in range(num_epochs):
     tv_cnt = 0
     ir_cnt = 0
-    targets_cnt = np.zeros((2,5))
+    targets_cnt = np.zeros((2,len(chosen_ids)))
+    epoch_loss = 0
+    epoch_step_cnt = 0
     for step,batch in enumerate(trainloader):
 
         # get one batch
@@ -221,7 +239,7 @@ for epoch in range(num_epochs):
 
         #pick a random target, with a bias towards choosing a target that 
         #is in the image. Also pick just one gt_box, since there is one target
-        if np.random.rand() < .6 and objects_present.shape[0]!=0:
+        if np.random.rand() < .7 and objects_present.shape[0]!=0:
             target_ind = int(np.random.choice(objects_present))
             gt_boxes = gt_boxes[np.where(gt_boxes[:,4]==target_ind)[0],:-1]
             gt_boxes[0,4] = 1
@@ -232,7 +250,9 @@ for epoch in range(num_epochs):
             target_ind = int(np.random.choice(not_present))
             gt_boxes = np.asarray([[0,0,1,1,0]])
 
-        target_data = target_images[target_ind-1]
+        target_name = id_to_name[target_ind]
+        target_data = target_images[target_name]
+        #target_data = target_images[target_ind-1]
         targets_cnt[1,target_ind-1] += 1 
 
 
@@ -244,10 +264,12 @@ for epoch in range(num_epochs):
         # forward
         ir_cnt +=1
         net(target_data,im_data, im_info, gt_boxes, gt_ishard, dontcare_areas)
-        loss = net.loss + net.rpn.loss
+        loss = net.loss + net.rpn.loss * 10
 
         train_loss += loss.data[0]
         step_cnt += 1
+        epoch_step_cnt += 1
+        epoch_loss += loss.data[0]
 
         # backward
         optimizer.zero_grad()
@@ -264,9 +286,9 @@ for epoch in range(num_epochs):
             #log_text = 'step %d, loss: %.4f, fps: %.2f (%.2fs per batch) tv_cnt:%d' \
             #           'ir_cnt:%d epoch:%d' % (
             #    step,  train_loss / step_cnt, fps, 1./fps, tv_cnt, ir_cnt, epoch)
-            log_text = 'step %d, avg_loss: %.4f, fps: %.2f (%.2fs per batch) tv_cnt:%d' \
-                       'ir_cnt:%d epoch:%d loss: %.4f' % (
-                step,  train_loss/step_cnt, fps, 1./fps, tv_cnt, ir_cnt, epoch, loss.data[0])
+            log_text = 'step %d, epoch_avg_loss: %.4f, fps: %.2f (%.2fs per batch) tv_cnt:%d' \
+                       'ir_cnt:%d epoch:%d loss: %.4f tot_avg_loss: %.4f' % (
+                step,  epoch_loss/epoch_step_cnt, fps, 1./fps, tv_cnt, ir_cnt, epoch, loss.data[0],train_loss/step_cnt)
             log_print(log_text, color='green', attrs=['bold'])
             print(targets_cnt)
 
@@ -284,8 +306,8 @@ for epoch in range(num_epochs):
     #test net on some val data
     data_path = '/playpen/ammirato/Data/HalvedRohitData/'
     scene_list=[
-             #'Home_003_1',
-             'Home_014_1',
+             'Home_003_1',
+             #'Home_014_1',
              #'Home_003_2',
              #'test',
              #'Office_001_1'
@@ -299,6 +321,7 @@ for epoch in range(num_epochs):
                                             preload=False,
                                             chosen_ids=chosen_ids, 
                                             by_box=False,
+                                            max_difficulty=max_difficulty,
                                             fraction_of_no_box=0)
 
     #create train/test loaders, with CUSTOM COLLATE function
@@ -307,18 +330,6 @@ for epoch in range(num_epochs):
                                               shuffle=True,
                                               collate_fn=AVD.collate)
 
-
-    image_names = os.listdir(target_path)
-    image_names.sort()
-    #target_images = []
-    target_images2 ={} 
-    means = np.array([[[102.9801, 115.9465, 122.7717]]])
-    for name in image_names:
-        target_data = cv2.imread(os.path.join(target_path,name))
-        target_data = target_data - means
-        target_data = np.expand_dims(target_data,axis=0)
-        #target_images[name[:-11]] = target_data
-        target_images2[name[:-7]] = target_data
 
 
 
@@ -329,14 +340,18 @@ for epoch in range(num_epochs):
     #test_net(model_name, net, dataloader, max_per_image, thresh=thresh, vis=vis,
     #         output_dir='/playpen/ammirato/Data/Detections/FasterRCNN_AVD/')
     max_per_image = 5
-    all_results = test_net(trained_model_name, net, valloader, name_to_id, target_images2, max_per_image=max_per_image)
+    model_name = save_base_name + '_{}'.format(epoch)
+    output_dir='/playpen/ammirato/Data/Detections/FasterRCNN_AVD/'
+    all_results = test_net(model_name, net, valloader, name_to_id, target_images, 
+                            max_per_image=max_per_image, output_dir=output_dir)
 
+    gt_labels= valset.get_original_bboxes()
 
-    evaluater = DetectorEvaluater(score_thresholds=np.linspace(0,1,11),
+    evaluater = DetectorEvaluater(score_thresholds=np.linspace(0,1,111),
                                   recall_thresholds=np.linspace(0,1,11))
     #m_ap,ap,max_p,errors,gt_total, image_counts = evaluater.run(
     m_ap = evaluater.run(
-                all_results,gt_boxes,chosen_ids,
+                all_results,gt_labels,chosen_ids,
                 max_difficulty=max_difficulty,
                 difficulty_classifier=valset.get_box_difficulty)
 
@@ -350,20 +365,12 @@ for epoch in range(num_epochs):
     net.train()
 
 
-    break
-
-
-
-
-
-
-
     if epoch % save_freq == 0:
+        save_epoch = epoch
         if load_trained_model:
-            save_name = os.path.join(output_dir, save_name_base+'_{}_{}.h5'.format(
-                                                  epoch+trained_epoch+1), epoch_loss/step_cnt)
-        else:
-            save_name = os.path.join(output_dir, save_name_base+'_{}_{:1.5f}.h5'.format(epoch, train_loss/step_cnt))
+            save_epoch = epoch+trained_epoch+1
+
+        save_name = os.path.join(output_dir, save_name_base+'_{}_{:1.5f}_{:1.5f}.h5'.format(save_epoch, train_loss/step_cnt, m_ap))
         network.save_net(save_name, net)
         print('save model: {}'.format(save_name))
 
