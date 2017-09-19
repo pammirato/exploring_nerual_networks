@@ -5,7 +5,7 @@ import cPickle
 import numpy as np
 
 from faster_rcnn import network
-from faster_rcnn.faster_rcnn_target_driven_archF import FasterRCNN, RPN
+from faster_rcnn.tdid import TDID 
 from faster_rcnn.utils.timer import Timer
 from faster_rcnn.fast_rcnn.nms_wrapper import nms
 
@@ -39,7 +39,9 @@ trained_model_names=[#'faster_rcnn_avd_split2_target_driven_fc7+_concat_vgg_feat
                     #'FRA_TD_1-5_archC_1_54',
                     #'FRA_TD_1-5_archA2_0_12',
 
-                    'FRA_TD_1-28_archF_7_7_23.27034_0.16408',
+                    'TDID_GMU_archA_2_9_27.73549_0.80030',
+                    'TDID_GMU_archA_2_6_30.02121_0.77436',
+                    'TDID_GMU_archA_2_39_20.75395_0.86257',
                     #'FRA_TD_1-5_archF_2_6',
                     #'FRA_TD_1-5_archF_2_10',
                     #'FRA_TD_1-5_archF_2_15',
@@ -263,8 +265,8 @@ def test_net(name, net, dataloader, name_to_id, target_images, max_per_image=300
                     all_boxes[j][i] = all_boxes[j][i][keep, :]
             nms_time = _t['misc'].toc(average=False)
 
-            #print 'im_detect: {:d}/{:d} {:.3f}s {:.3f}s' \
-            #    .format(i + 1, num_images, detect_time, nms_time)
+            print 'im_detect: {:d}/{:d} {:.3f}s {:.3f}s' \
+                .format(i + 1, num_images, detect_time, nms_time)
 
             if vis:
                 #cv2.imshow('test', im2show)
@@ -295,9 +297,8 @@ def test_net(name, net, dataloader, name_to_id, target_images, max_per_image=300
         #all_results[batch[1][1]] = all_image_dets.astype(np.int32).tolist()
         all_results[batch[1][1]] = all_image_dets.tolist()
     if output_dir is not None:
-        #with open(det_file, 'wb') as f:
-        #    cPickle.dump(all_boxes, f, cPickle.HIGHEST_PROTOCOL)
-        with open(det_file, 'w') as f:
+        with open(det_file, 'wb') as f:
+        #    cPickle.dump(all_boxes, f, cPickle.HIGHEST_PROTOCOL) with open(det_file, 'w') as f:
             json.dump(all_results,f)
    # print 'Evaluating detections'
    # imdb.evaluate_detections(all_boxes, output_dir)
@@ -319,7 +320,7 @@ if __name__ == '__main__':
     dataset = GetDataSet.get_fasterRCNN_AVD(data_path,
                                             scene_list,
                                             preload=False,
-                                            chosen_ids=range(28), 
+                                            chosen_ids=range(6), 
                                             by_box=False,
                                             fraction_of_no_box=0)
 
@@ -336,19 +337,31 @@ if __name__ == '__main__':
         name_to_id[id_to_name[cid]] = cid 
 
     #load all target images
-    target_path = '/playpen/ammirato/Data/big_bird_patches_80'
+    #target_path = '/playpen/ammirato/Data/big_bird_patches_80'
+    target_path = '/playpen/ammirato/Data/big_bird_patches_80_2'
     #target_path = '/playpen/ammirato/Data/big_bird_crops_80'
     image_names = os.listdir(target_path)
     image_names.sort()
     #target_images = []
     target_images ={} 
     means = np.array([[[102.9801, 115.9465, 122.7717]]])
+#    for name in image_names:
+#        target_data = cv2.imread(os.path.join(target_path,name))
+#        target_data = target_data - means
+#        target_data = np.expand_dims(target_data,axis=0)
+#        target_images[name[:-11]] = target_data
+#        #target_images[name[:-7]] = target_data
+
+    for name in image_names:
+        target_images[name[:(name.rfind('_')-4)]] = []  
     for name in image_names:
         target_data = cv2.imread(os.path.join(target_path,name))
         target_data = target_data - means
         target_data = np.expand_dims(target_data,axis=0)
-        target_images[name[:-11]] = target_data
-        #target_images[name[:-7]] = target_data
+        target_images[name[:(name.rfind('_')-4)]].append(target_data)
+
+
+
 
 
     #test multiple trained nets
@@ -356,7 +369,8 @@ if __name__ == '__main__':
         print model_name
         # load net
         #net = FasterRCNN(classes=imdb.classes, debug=False)
-        net = FasterRCNN(classes=dataset.get_class_names(), debug=False)
+        #net = FasterRCNN(classes=dataset.get_class_names(), debug=False)
+        net = TDID() 
         network.load_net(trained_model_path + model_name+'.h5', net)
         print('load model successfully!')
 

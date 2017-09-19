@@ -55,14 +55,14 @@ pretrained_model = '/playpen/ammirato/Data/Detections/pretrained_models/VGG_imag
 #output_dir = 'models/saved_model3'
 output_dir = ('/playpen/ammirato/Data/Detections/' + 
              '/saved_models/')
-save_name_base = 'FRA_TD_1-28_archF_10'
+save_name_base = 'FRA_TD_1-28_archF_8'
 save_freq = 1 
 
 trained_model_path = ('/playpen/ammirato/Data/Detections/' +
                      '/saved_models/')
-trained_model_name = 'FRA_TD_1-28_archF_10_2_7.90905_0.16825.h5'
+trained_model_name = 'FRA_TD_1-28_archF_7_3_33.48661_0.14898.h5'
 load_trained_model = True 
-trained_epoch = 2 
+trained_epoch = 7 
 
 start_step = 0
 end_step = 100000
@@ -145,46 +145,8 @@ for cid in id_to_name.keys():
     name_to_id[id_to_name[cid]] = cid
 
 
-count_by_class = train_set.get_count_by_class()
-all_class_counts = np.array([count_by_class[x] for x in count_by_class.keys()])
-class_probs = all_class_counts / float(sum(all_class_counts))
-
-#compute class weights
-total = float(sum(all_class_counts))
-class_weights = {}  
-max_weight = 0 
-for cid in count_by_class.keys():
-    if count_by_class[cid] > 0:
-        #TODO: make more robust. use class id, not index
-        wt =  total / count_by_class[cid]
-        class_weights[cid] = wt  
-        if wt > max_weight:
-            max_weight = wt
-    elif cid >0: 
-        class_weight[cid] = 1 
-
-class_weights[8] = 1 
-class_weights[18] = 1 
-
-for cid in class_weights.keys():
-    class_weights[cid] = class_weights[cid]/max_weight
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 #load all target images
-#target_path = '/playpen/ammirato/Data/big_bird_patches_80'
-target_path = '/playpen/ammirato/Data/big_bird_patches_80_2'
+target_path = '/playpen/ammirato/Data/big_bird_patches_80'
 image_names = os.listdir(target_path)
 image_names.sort()
 #target_images = []
@@ -196,13 +158,10 @@ means = np.array([[[102.9801, 115.9465, 122.7717]]])
 #    target_data = np.expand_dims(target_data,axis=0)
 #    target_images.append(target_data)
 for name in image_names:
-    target_images[name[:(name.rfind('_')-4)]] = [] 
-for name in image_names:
     target_data = cv2.imread(os.path.join(target_path,name))
     target_data = target_data - means
     target_data = np.expand_dims(target_data,axis=0)
-    target_images[name[:(name.rfind('_')-4)]].append(target_data)
-    #target_images[name[:-11]].append(target_data)
+    target_images[name[:-11]] = target_data
     #target_images[name[:-7]] = target_data
 
 
@@ -293,8 +252,6 @@ for epoch in range(num_epochs):
 
         target_name = id_to_name[target_ind]
         target_data = target_images[target_name]
-        target_data2 = target_data[1]
-        target_data = target_data[0]
         #target_data = target_images[target_ind-1]
         targets_cnt[1,target_ind-1] += 1 
 
@@ -306,9 +263,8 @@ for epoch in range(num_epochs):
 
         # forward
         ir_cnt +=1
-        net(target_data,target_data2,im_data, im_info, gt_boxes, gt_ishard, dontcare_areas)
-        loss = net.rpn.loss * class_weights[target_ind] 
-        loss = loss * 10
+        net(target_data,im_data, im_info, gt_boxes, gt_ishard, dontcare_areas)
+        loss = net.loss + net.rpn.loss * 10
 
         train_loss += loss.data[0]
         step_cnt += 1

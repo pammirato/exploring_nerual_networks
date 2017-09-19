@@ -1,14 +1,13 @@
 import numpy as np
 import cv2
 import os
-import matplotlib.pyplot as plt
 
 #reisze images so largest side is X
 #do not pad, make square 
 
 desired_size = 80 
 base_path = '/playpen/ammirato/Data/big_bird_patches'
-save_path = '/playpen/ammirato/Data/big_bird_patches_80'
+save_path = '/playpen/ammirato/Data/big_bird_patches_80_2'
 image_names = os.listdir(base_path)
 
 os.mkdir(save_path)

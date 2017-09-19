@@ -31,7 +31,6 @@ def nms_detections(pred_boxes, scores, nms_thresh, inds=None):
 
 class RPN(nn.Module):
     _feat_stride = [16, ]
-    #anchor_scales = [8, 16, 32]
     anchor_scales = [2, 4, 8]
 
     def __init__(self):
@@ -40,11 +39,9 @@ class RPN(nn.Module):
         #first 5 conv layers of VGG? only resizing is 4 max pools
         self.features = VGG16(bn=False)
 
-        #self.input_conv = Conv2d(3,3,1, relu=False, same_padding=True)
-
-        self.conv1 = Conv2d(2,32, 3, relu=False, same_padding=True)
-        self.score_conv = Conv2d(32, len(self.anchor_scales) * 3 * 2, 1, relu=False, same_padding=False)
-        self.bbox_conv = Conv2d(32, len(self.anchor_scales) * 3 * 4, 1, relu=False, same_padding=False)
+        self.conv1 = Conv2d(512, 512, 3, same_padding=True)
+        self.score_conv = Conv2d(512, len(self.anchor_scales) * 3 * 2, 1, relu=False, same_padding=False)
+        self.bbox_conv = Conv2d(512, len(self.anchor_scales) * 3 * 4, 1, relu=False, same_padding=False)
 
         # loss
         self.cross_entropy = None
@@ -54,58 +51,35 @@ class RPN(nn.Module):
     def loss(self):
         return self.cross_entropy + self.loss_box * 10
 
-    def forward(self, target_data,target_data2, im_data, im_info, gt_boxes=None, gt_ishard=None, dontcare_areas=None):
+    def forward(self, target_data, im_data, im_info, gt_boxes=None, gt_ishard=None, dontcare_areas=None):
       
         #get image features 
         im_data = network.np_to_variable(im_data, is_cuda=True)
         im_data = im_data.permute(0, 3, 1, 2)
-        im_in = im_data#self.input_conv(im_data)
-        features = self.features(im_in)
+        features = self.features(im_data)
 
         #get target image features
         target_data = network.np_to_variable(target_data, is_cuda=True)
         target_data = target_data.permute(0, 3, 1, 2)
-        target_in = target_data#self.input_conv(target_data)
-        target_features = self.features(target_in)
+        target_features = self.features(target_data)
+        target_features = self.target_conv(target_features) 
+        
+        features_permute = features.permute(0,2,3,1).contiguous()
+        features_reshape = self.reshape_layer(features_permute,33*60)
+        features_reshape = features_reshape[0,:,0,:]
+        #concatenate image features with target image features
+        x = torch.cat([features_reshape,target_features.expand(features_reshape.size()[0],
+                                                               target_features.size()[1])],1)
+        #embed the concatenated features
+        x = self.target_embedding(x)
+        x = x.unsqueeze(0)
+        x = x.unsqueeze(2)
+        x = self.reshape_layer(x,33)
+        x = x.permute(0,3,1,2).contiguous()
+        features = x 
 
-        target_data2 = network.np_to_variable(target_data2, is_cuda=True)
-        target_data2 = target_data2.permute(0, 3, 1, 2)
-        target_in2 = target_data2#self.input_conv(target_data2)
-        target_features2 = self.features(target_in2)
+        rpn_conv1 = self.conv1(features)
 
-
-       
-        padding = (max(0,int(target_features.size()[2]/2)), 
-                   max(0,int(target_features.size()[3]/2)))
-        padding2 = (max(0,int(target_features2.size()[2]/2)), 
-                   max(0,int(target_features2.size()[3]/2)))
-
-        conved_feats = F.conv2d(features,target_features, padding=padding)
-        conved_feats2 = F.conv2d(features,target_features, padding=padding)
-
-        if conved_feats.size()[2] > features.size()[2]:
-            conved_feats = torch.index_select(conved_feats, 2, 
-                                              network.np_to_variable(np.arange(0,features.size()[2]).astype(np.int32),
-                                                                     is_cuda=True,dtype=torch.LongTensor))
-        if conved_feats.size()[3] > features.size()[3]:
-            conved_feats = torch.index_select(conved_feats, 3, 
-                                              network.np_to_variable(np.arange(0,features.size()[3]).astype(np.int32),
-                                                                     is_cuda=True,dtype=torch.LongTensor))
-        if conved_feats2.size()[2] > features.size()[2]:
-            conved_feats2 = torch.index_select(conved_feats2, 2, 
-                                              network.np_to_variable(np.arange(0,features.size()[2]).astype(np.int32),
-                                                                     is_cuda=True,dtype=torch.LongTensor))
-        if conved_feats2.size()[3] > features.size()[3]:
-            conved_feats2 = torch.index_select(conved_feats2, 3, 
-                                              network.np_to_variable(np.arange(0,features.size()[3]).astype(np.int32),
-                                                                     is_cuda=True,dtype=torch.LongTensor))
-
-        cat_feats = torch.cat([conved_feats,conved_feats2], 1)
-
-
-        rpn_conv1 = self.conv1(cat_feats)
-
- 
         # rpn score
         rpn_cls_score = self.score_conv(rpn_conv1)
         rpn_cls_score_reshape = self.reshape_layer(rpn_cls_score, 2)
@@ -133,7 +107,6 @@ class RPN(nn.Module):
     def build_loss(self, rpn_cls_score_reshape, rpn_bbox_pred, rpn_data):
         # classification loss
         rpn_cls_score = rpn_cls_score_reshape.permute(0, 2, 3, 1).contiguous().view(-1, 2)
-#        rpn_bbox_pred = rpn_bbox_pred.permute(0, 2, 3, 1).contiguous().view(-1, 4)
         rpn_label = rpn_data[0].view(-1)
 
         rpn_keep = Variable(rpn_label.data.ne(-1).nonzero().squeeze()).cuda()
@@ -142,11 +115,11 @@ class RPN(nn.Module):
 
         fg_cnt = torch.sum(rpn_label.data.ne(0))
 
-        #weight = torch.FloatTensor([.1,5])
+        #weight = [torch.FloatTensor([0]), torch.FloatTensor([10])]
+        #weight = torch.FloatTensor([0,10])
         #weight = weight.cuda()
         #rpn_cross_entropy = F.cross_entropy(rpn_cls_score, rpn_label, weight=weight)
         rpn_cross_entropy = F.cross_entropy(rpn_cls_score, rpn_label, size_average=False)
-        #rpn_cross_entropy = F.cross_entropy(rpn_cls_score, rpn_label, size_average=False, weight=weight)
         #rpn_cross_entropy = F.cross_entropy(rpn_cls_score, rpn_label)
 
         # box loss
@@ -281,8 +254,8 @@ class FasterRCNN(nn.Module):
         # print self.rpn.loss_box
         return self.cross_entropy + self.loss_box * 10
 
-    def forward(self, target_data, target_data2, im_data, im_info, gt_boxes=None, gt_ishard=None, dontcare_areas=None):
-        target_features, features, rois,scores = self.rpn(target_data, target_data2, im_data, im_info, gt_boxes, gt_ishard, dontcare_areas)
+    def forward(self, target_data, im_data, im_info, gt_boxes=None, gt_ishard=None, dontcare_areas=None):
+        target_features, features, rois,scores = self.rpn(target_data, im_data, im_info, gt_boxes, gt_ishard, dontcare_areas)
 
         #if self.training:
         #    roi_data = self.proposal_target_layer(rois, gt_boxes, gt_ishard, dontcare_areas, self.n_classes)

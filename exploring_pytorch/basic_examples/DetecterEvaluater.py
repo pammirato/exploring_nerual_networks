@@ -565,7 +565,11 @@ if __name__ == '__main__':
                            #'FRA_TD_1-5_archC_1_15',
                            #'FRA_TD_1-5_archD_0_68',
 
-                           'FRA_TD_1-5_archF_6_71_29.06841_0.07448',
+                           #'FRA_TD_1-28_archF_7_15',
+                           # 'TDID_archA_0_7',
+                            'TDID_GMU_archA_2_9_27.73549_0.80030',
+                            'TDID_GMU_archA_2_6_30.02121_0.77436',
+                           'TDID_GMU_archA_2_39_20.75395_0.86257',
                            #'FRA_TD_1-5_archF_2_6',
                            #'FRA_TD_1-5_archF_2_10',
                            #'FRA_TD_1-5_archF_2_15',
@@ -590,38 +594,6 @@ if __name__ == '__main__':
                            #'FRA_TD_1-28_archA2_0_16',
                            #'FRA_TD_1-28_archA2_0_18',
                            #'FRA_TD_1-28_archA2_0_20',
-                           #'FRA_TD_1-28_archA2_0_22',
-                           #'FRA_TD_1-28_archA2_0_24',
-                           #'FRA_TD_1-28_archA2_0_26',
-                           #'FRA_TD_1-28_archA2_0_28',
-                           #'FRA_TD_1-28_archA2_0_30',
-                           #'FRA_TD_1-28_archA2_0_32',
-                           #'FRA_TD_1-28_archA2_0_34',
-                           #'FRA_TD_1-28_archA2_0_36',
-                           #'FRA_TD_1-28_archA2_0_38',
-                           #'FRA_TD_1-28_archA2_0_40',
-                           #'FRA_TD_1-5_archA2_0_42',
-                           #'FRA_TD_1-5_archA2_0_44',
-                           #'FRA_TD_1-5_archA2_0_46',
-                           #'FRA_TD_1-5_archA2_0_48',
-                           #'FRA_TD_1-5_archA2_0_50',
-                           #'FRA_TD_1-5_archA2_0_52',
-                           #'FRA_TD_1-5_archA2_0_54',
-                           #'FRA_TD_1-5_archA2_0_56',
-                           #'FRA_TD_1-5_archA2_0_58',
-                           #'FRA_TD_1-5_archA2_0_60',
-                           #'FRA_TD_1-5_archA2_0_62',
-                           #'FRA_TD_1-5_archA2_0_64',
-                           #'FRA_TD_1-5_archA2_0_66',
-                           #'FRA_TD_1-5_archA2_0_68',
-                           #'FRA_TD_1-5_archA2_0_70',
-                           #'FRA_TD_1-5_archA2_0_72',
-                           #'FRA_TD_1-5_archA2_0_74',
-                           #'FRA_TD_1-5_archA2_0_76',
-                           #'FRA_TD_1-5_archA2_0_78',
-                           #'FRA_TD_1-5_archA2_0_80',
-                           #'FRA_TD_1-5_archA2_0_82',
-                           #'FRA_TD_1-5_archA2_0_84',
                            #'FRA_TD_1-5_archA2_0_86',
                           ]
 
@@ -633,7 +605,7 @@ if __name__ == '__main__':
                   'FasterRCNN_AVD/' + model_name+'.json') as f:
             det_results = json.load(f)
 
-        evaluater = DetectorEvaluater(score_thresholds=np.linspace(0,1,11),
+        evaluater = DetectorEvaluater(score_thresholds=np.linspace(0,1,111),
                                       recall_thresholds=np.linspace(0,1,11))
         #m_ap,ap,max_p,errors,gt_total, image_counts = evaluater.run(
         m_ap = evaluater.run(

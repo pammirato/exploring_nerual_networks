@@ -179,8 +179,11 @@ def test_net(name, net, dataloader, name_to_id, target_images, max_per_image=300
     # all detections are collected into:
     #    all_boxes[cls][image] = N x 5 array of detections in
     #    (x1, y1, x2, y2, score)
-    all_boxes = [[[] for _ in xrange(num_images)]
-                 for _ in xrange(dataloader.dataset.get_num_classes())]
+    #all_boxes = [[[] for _ in xrange(num_images)]
+    #             for _ in xrange(dataloader.dataset.get_num_classes())]
+    all_boxes = {} 
+    for cid in name_to_id.values():
+        all_boxes[cid] = [[] for _ in range(num_images)]
     #array of result dicts
     all_results = {} 
     #output_dir = get_output_dir(imdb, name)
@@ -204,17 +207,6 @@ def test_net(name, net, dataloader, name_to_id, target_images, max_per_image=300
         im_info[0,:] = [im_data.shape[1],im_data.shape[2],1]
         dontcare_areas = np.zeros((0,4))       
 
-
-        if batch[1][1] == '000320009230101.jpg':
-            breakp = 1
-
-        #im = im_data.squeeze()
-        #im = im.copy()
-        #means = np.array([[[102.9801, 115.9465, 122.7717]]])
-        #im -= means
-        #im = im.astype(np.uint8)
- 
-
         all_image_dets = np.zeros((0,6)) 
         #for j,target_data in enumerate(target_images):
         for j,target_name in enumerate(dataloader.dataset.get_class_names()):
@@ -224,7 +216,8 @@ def test_net(name, net, dataloader, name_to_id, target_images, max_per_image=300
             target_data = target_images[target_name]
             target_data2 = target_data[1]
             target_data = target_data[0]
-            j = int(name_to_id[target_name]-1)
+            #j = int(name_to_id[target_name]-1)
+            j = int(name_to_id[target_name])
 
             _t['im_detect'].tic()
             scores, boxes = im_detect(net, target_data, target_data2, im_data, im_info)
@@ -277,7 +270,8 @@ def test_net(name, net, dataloader, name_to_id, target_images, max_per_image=300
             #make a list of all detections in this image
             class_dets = all_boxes[j][i]
             #put class id in the box
-            class_dets = np.insert(class_dets,4,j+1,axis=1)
+            #class_dets = np.insert(class_dets,4,j+1,axis=1)
+            class_dets = np.insert(class_dets,4,j,axis=1)
             all_image_dets = np.vstack((all_image_dets,class_dets))
             #for box in class_dets:
             #    result = {'image_name':batch[1][1],

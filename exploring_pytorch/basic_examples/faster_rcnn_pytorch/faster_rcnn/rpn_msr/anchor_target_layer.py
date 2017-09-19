@@ -228,6 +228,7 @@ def anchor_target_layer(rpn_cls_score, gt_boxes, gt_ishard, dontcare_areas, im_i
 
         #Phil
         #hard mine negatives
+        #assert( np.all(labels[hard_negs] <1))
         #labels[hard_negs] = 0
 
 
