@@ -33,60 +33,10 @@ trained_model_names = ['fasterRCNN_avd.h5']
 
 
 trained_model_names=[#'faster_rcnn_avd_split2_target_driven_fc7+_concat_vgg_feat_concat_train7_19',
-                    #'FRA_TD_1-28_archB1_0_100',
-                    #'FRA_TD_1-5_archB1_0_60',
-                    #'FRA_TD_1-5_archC_0_0',
-                    #'FRA_TD_1-5_archC_1_54',
-                    #'FRA_TD_1-5_archA2_0_12',
 
-                    'TDID_GMU_archA_2_9_27.73549_0.80030',
-                    'TDID_GMU_archA_2_6_30.02121_0.77436',
-                    'TDID_GMU_archA_2_39_20.75395_0.86257',
-                    #'FRA_TD_1-5_archF_2_6',
-                    #'FRA_TD_1-5_archF_2_10',
-                    #'FRA_TD_1-5_archF_2_15',
-                    #'FRA_TD_1-5_archF_2_20',
-                    #'FRA_TD_1-5_archF_2_25',
-                    #'FRA_TD_1-5_archF_2_30',
-                    #'FRA_TD_1-5_archF_2_35',
-                    #'FRA_TD_1-5_archF_2_40',
-                    #'FRA_TD_1-5_archF_2_45',
-                    #'FRA_TD_1-5_archF_2_50',
-                    #'FRA_TD_1-5_archF_2_55',
-                    #'FRA_TD_1-5_archF_2_60',
-                    #'FRA_TD_1-5_archA2_0_24',
-                    #'FRA_TD_1-5_archA2_0_26',
-                    #'FRA_TD_1-5_archA2_0_28',
-                    #'FRA_TD_1-5_archA2_0_30',
-                    #'FRA_TD_1-5_archA2_0_32',
-                    #'FRA_TD_1-5_archA2_0_34',
-                    #'FRA_TD_1-5_archA2_0_36',
-                    #'FRA_TD_1-5_archA2_0_38',
-                    #'FRA_TD_1-5_archA2_0_40',
-                    #'FRA_TD_1-5_archA2_0_42',
-                    #'FRA_TD_1-5_archA2_0_44',
-                    #'FRA_TD_1-5_archA2_0_46',
-                    #'FRA_TD_1-5_archA2_0_48',
-                    #'FRA_TD_1-5_archA2_0_50',
-                    #'FRA_TD_1-5_archA2_0_52',
-                    #'FRA_TD_1-5_archA2_0_54',
-                    #'FRA_TD_1-5_archA2_0_56',
-                    #'FRA_TD_1-5_archA2_0_58',
-                    #'FRA_TD_1-5_archA2_0_60',
-                    #'FRA_TD_1-5_archA2_0_62',
-                    #'FRA_TD_1-5_archA2_0_64',
-                    #'FRA_TD_1-5_archA2_0_66',
-                    #'FRA_TD_1-5_archA2_0_68',
-                    #'FRA_TD_1-5_archA2_0_70',
-                    #'FRA_TD_1-5_archA2_0_72',
-                    #'FRA_TD_1-5_archA2_0_74',
-                    #'FRA_TD_1-5_archA2_0_76',
-                    #'FRA_TD_1-5_archA2_0_78',
-                    #'FRA_TD_1-5_archA2_0_80',
-                    #'FRA_TD_1-5_archA2_0_82',
-                    #'FRA_TD_1-5_archA2_0_84',
-                    #'FRA_TD_1-5_archA2_0_86',
-                    #'FRA_TD_1-5_archA2_0_88',
+                    'TDID_archA_3_14_15.33493_0.69354',
+                    'TDID_archA_3_36_12.99838_0.74052',
+                    'TDID_archA_3_32_13.25240_0.70427',
                     ]
 rand_seed = 1024
 
@@ -311,18 +261,18 @@ if __name__ == '__main__':
     data_path = '/playpen/ammirato/Data/HalvedRohitData/'
     scene_list=[
              'Home_003_1',
-             #'Home_003_2',
+             'Home_003_2',
              #'test',
-             #'Office_001_1'
+             'Office_001_1'
              ]
 
     #CREATE TRAIN/TEST splits
     dataset = GetDataSet.get_fasterRCNN_AVD(data_path,
                                             scene_list,
                                             preload=False,
-                                            chosen_ids=range(6), 
+                                            chosen_ids=range(28), 
                                             by_box=False,
-                                            fraction_of_no_box=0)
+                                            fraction_of_no_box=1)
 
     #create train/test loaders, with CUSTOM COLLATE function
     dataloader = torch.utils.data.DataLoader(dataset,

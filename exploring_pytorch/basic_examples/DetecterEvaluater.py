@@ -538,17 +538,17 @@ if __name__ == '__main__':
     scene_list=[
              'Home_003_1',
              #'Home_002_1',
-             #'Home_003_2',
+             'Home_003_2',
              #'test',
-             #'Office_001_1'
+             'Office_001_1'
              ] 
 
     max_difficulty=4
-    chosen_ids = range(6)
+    chosen_ids = range(28)
     dataset = GetDataSet.get_fasterRCNN_AVD(data_path,
                                             scene_list,
                                             chosen_ids=chosen_ids,
-                                            fraction_of_no_box=0,
+                                            fraction_of_no_box=1,
                                             max_difficulty=5)
     gt_boxes = dataset.get_original_bboxes()
 
@@ -567,33 +567,10 @@ if __name__ == '__main__':
 
                            #'FRA_TD_1-28_archF_7_15',
                            # 'TDID_archA_0_7',
-                            'TDID_GMU_archA_2_9_27.73549_0.80030',
-                            'TDID_GMU_archA_2_6_30.02121_0.77436',
-                           'TDID_GMU_archA_2_39_20.75395_0.86257',
+                            'TDID_archA_3_14_15.33493_0.69354',
+                            'TDID_archA_3_32_13.25240_0.70427',
+                            'TDID_archA_3_36_12.99838_0.74052',
                            #'FRA_TD_1-5_archF_2_6',
-                           #'FRA_TD_1-5_archF_2_10',
-                           #'FRA_TD_1-5_archF_2_15',
-                           #'FRA_TD_1-5_archF_2_20',
-                           #'FRA_TD_1-5_archF_2_25',
-                           #'FRA_TD_1-5_archF_2_30',
-                           #'FRA_TD_1-5_archF_2_35',
-                           #'FRA_TD_1-5_archF_2_40',
-                           #'FRA_TD_1-5_archF_2_45',
-                           #'FRA_TD_1-5_archF_2_50',
-                           #'FRA_TD_1-5_archF_2_55',
-                           #'FRA_TD_1-5_archF_2_60',
-                           
-                           #'FRA_TD_1-28_archA2_0_0',
-                           #'FRA_TD_1-28_archA2_0_2',
-                           #'FRA_TD_1-28_archA2_0_4',
-                           #'FRA_TD_1-28_archA2_0_7',
-                           #'FRA_TD_1-28_archA2_0_9',
-                           #'FRA_TD_1-28_archA2_0_10',
-                           #'FRA_TD_1-28_archA2_0_12',
-                           #'FRA_TD_1-28_archA2_0_14',
-                           #'FRA_TD_1-28_archA2_0_16',
-                           #'FRA_TD_1-28_archA2_0_18',
-                           #'FRA_TD_1-28_archA2_0_20',
                            #'FRA_TD_1-5_archA2_0_86',
                           ]
 
